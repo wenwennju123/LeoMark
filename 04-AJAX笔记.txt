@@ -1,0 +1,489 @@
+AJAX**重点**
+    Asynchronous JavaScript And Xml
+        (是xml的原因是AJAX最初出现的时候还没有JSON，目前json更加流行)
+    AJAX是多种技术的综合产物，可以让服务器发送一种特殊的请求，异步请求
+    AJAX代码属于WEB前端的JS代码，和后端的java没有关系
+    AJAX应用程序可以使用XML来传输数据，但将数据作为纯文本或JSON文本传输也同样常见
+    AJAX可以更新网页的不问，而不需要重新加载整个页面
+    AJAX可以做到在同一个网页中，同时启动多个请求，类似于在同一个网页中启动多线程，一个线程一个请求
+    核心：
+    AJAX请求1和AJAX请求2是异步的，互不干扰
+        (多个线程之间排队执行，某个线程需要等待其他线程的进度或者资源等情况，叫同步)
+    不会已发送请求整个页面都清空等待响应
+    对于AJAX来说，WEB server 端可能会响应回来三种数据，普通文本，XML字符串，JSON字符串
+    浏览器前端上的div AJAX接收到响应的字符串，进行渲染，刷新局部，div图层展示更新
+
+传统的请求有什么缺点:
+    直接在浏览器地址栏上输入URL
+    超链接
+    form表单提交
+    JS代码发送请求
+
+浏览器上发送AJAX请求，使用的是JavaScript代码，属于前端技术，后端可以是java，php，python...
+发送的对象
+    XMLHttpRequest对象
+    这是AJAX的核心对象，发送请求以及接收响应数据的核心对象
+    现代浏览器都内置了此对象，对该技术进行了支持
+    创建：（JS）
+    var xhr = new XMLHttpRequest();
+*************************************************************************
+XMLHttpRequest对象的属性和方法
+    readyState属性
+        记录XMLHttpRequest对象的状态，
+        0:请求未初始化
+        1:服务器链接已建立
+        2:请求已收到
+        3:正在处理请求
+        4:请求已完成且响应已就绪
+    作用是记录关键的时间点，当这个属性值变为4的时候，表示请求已经处理完毕
+
+AJAX GET请求的缓存请求，
+    在低版本的一些浏览器中，可能会走缓存，存在缓存问题(目前基本不存在)
+    在HTTP协议中是这样规定get请求的，get请求会被缓存起来
+    (例如浏览器上显示的图片，首次访问该网站时，加载图片的请求发送给了服务器，返回了对应的图像文件
+    在第二访问时，加载图片的请求就会先去本地的缓存去找，找到了就直接展示)
+    解绝方式：在请求路径url后面添加时间戳，系统时间戳，随时变化，每一次发送的请求路径就都是不同的了
+    new Date().getTime();
+    POST请求在HTTP协议中不存在缓存问题，协议规定其不会被缓存
+
+GET请求和POST请求 AJAX
+    区别：open中设置“GET” “POST”
+        设置请求头   setRequestHeader("Content-Type","application/x-www-form-urlencoded")
+        请求体中发送  send(name=value&name=value...)
+
+************************************************************
+前后端数据交换 引入JSON/XML
+在JS中创建json对象
+    var jsonObj = {
+        key : value,
+        key : value,
+        ...
+    }
+
+在web前端中，将json格式的字符串转换成json对象的方法
+    eval函数
+    内置对象JSON的parse方法
+
+后端返回json，拼串，可以使用fastJSON插件来完成快速转换
+只需要将信息封装到对象的属性中
+    调用JSON.toJSONString();方法
+    然后将字符串打给前端
+
+*****************************************************************
+XML格式
+    XML体积大，解析繁琐，现在使用较少
+    标签格式：
+    需要先设置response.setContextType("text/xml;charset=UTF-8")
+<students>
+    <student>
+        <name>张三</name>
+        <age>20</age>
+    </student>
+    <student>
+        <name>李四</name>
+        <age>25</age>
+    </student>
+    ...
+        ...
+        ...
+    ...
+<students>
+
+前端接收解析数据：
+    使用XMLHTTPRequest对象的responseXML属性来接收，还会自动将其打包成xml文档对象
+    let xmlDoc = xhr.responseXML;
+    根据标签名字获取数据
+    let students = xmlDoc.getElementsByTagName("student");
+    返回student数组students
+    //取节点名students[0].nodeName
+    遍历数组
+    for(var i = 0;i < students.length;i++){
+        //取数组中的元素
+        var student = students[i];
+        //获取<student>元素下的所有子元素,返回数组
+        var children = student.childNodes;
+        //遍历数组
+        for(j = 0;j<children.length;j++){
+            //取数组中的元素
+            var node = children[j];
+            //取节点名node.nodeName()
+            if(node.nodeName === "name"){
+                //取节点中的数据console.log(node.textContext);
+                拼串html
+                html += "<td>" + node.textContext + "</td>"
+            } else if(node.nodeName === "age"){
+                拼串html
+                html += "<td>" + node.textContext + "</td>"
+            }
+        }
+    }
+    将拼好的html放入需要展示的位置
+    document.getElementById("tBody").innerHtml(html);
+********************************************************************
+解决AJAX中的乱码问题
+    get请求中
+        服务器接收中文
+        服务器相应给浏览器中文
+    post请求中
+        服务器接收中文
+        服务器相应给浏览器中文
+    低版本的Tomcat服务器和高版本的
+    不同品牌的浏览器
+
+    Tomcat10来说，无需额外干涉，
+    对于低版本的Tomcat，不仅字符集默认设置不是UTF-8，javaee的版本也是旧的，不是jakarta
+
+    出错原因：
+        字符集没有设置 UTF-8
+    解决方案：
+        response.setContextType("text/html;charSet=UTF-8");
+
+**********************************************************************
+AJAX异步请求深度解析
+    异步请求：ajax请求1与ajax请求2，同时并发，不用等待对方
+        xhr.open("method","URL",true)
+    同步请求：如果ajax请求1再发送的时候需要等待ajax请求2结束之后才能发送，叫同步/排队
+        xhr.open("method","URL",false)
+    绝大部分使用异步请求，特殊业务场景下会使用同步请求
+    同步请求发送了，其他请求就会等待其结束，才会继续发送，排队发送
+
+选用情景
+    用户注册表单：
+        用户名     需要发送ajax请求验证用户名是否可用
+        邮箱地址    需要发送ajax请求验证邮箱地址是否可用
+        密码      需要发送ajax请求验证密码是否可用
+        密码验证
+        ...       需要发送ajax请求进行验证...
+        ...
+        注册       注册的时候也需要发送ajax请求进行注册
+
+    为了保证用户信息安全，用户名，邮箱地址等验证的ajax请求未收到响应时有延迟等情况，无法判断其是否可以用来注册
+    这时注册的ajax请求就不能异步去发送
+    解决方案：验证用户名，邮箱等的信息的ajax请求设置为同步，保证得到响应之后，才可以发送注册的ajax请求
+***********************************************************************
+AJAX代码封装
+    四步：new核心对象 注册onreadystatechange回调函数 开启通道open post请求需要设置请求头格式setRequestHeader 发送send
+    代码重复较高，可以封装成一个工具类来简化
+    是在JavaScript中运行的，可以看作一个JS的库
+    之后叫做jQuery(前端框架之一，方便web前端代码的编写)
+
+css中有id选择器(#btn{})，类选择器(.myclass{})
+
+优化：document.getElementById("btn").onclick = function(){} 根据id获取元素
+思路：来自css的语法，#id 就可以获取到这个元素
+代码：
+var domObj;
+function jQuery(selector){
+    /**
+     * 使用typeof运算符判断数据的类型 string才有typeof方法
+     * 演示封装document.getElementById()
+     */
+    if (typeof selector === "string") {
+        if (selector.charAt(0) === "#") {
+            //升级成全局对象
+            domObj = document.getElementById(selector.substring(1));
+            /**
+             * 返回自身的对象，来让其中的方法继续执行下去
+             * $("btn") 使其返回jQuery对象
+             */
+            return new jQuery();
+        }
+    }
+    /**
+     * 使用typeof判断是函数 function
+     * 演示封装window.onload = function()
+     */
+    if (typeof selector === "function" ){
+        window.onload = selector;
+    }
+    /**
+     * 继续为jQuery封装方法 innerHTML属性封装进去
+     * 定义一个jQuery的html()函数，用来代替domObj.innerHtml = ""
+     */
+    this.html = function (htmlText){
+        domObj.innerHTML = htmlText;
+    }
+    /**
+     * jQuery对象没有onclick属性，继续封装
+     * 定义click函数，代替dom对象的onclick() = function{}
+     * 可以扩展其他方法例如 onfocus onblur... 等
+     */
+    this.click = function (fun){
+        domObj.onclick = fun;
+    }
+    /**
+     * 包装.value
+     * js中不存在方法重载，只能对参数进行判断
+     * 不传参数的时候是undefined
+     * @returns domObj.value
+     */
+    this.val = function (content){
+        if (content === undefined){
+            return domObj.value;
+        }else {
+            domObj.value = content;
+        }
+    }
+    /**
+     * 封装ajax请求的各种方法,调用着传递的是JSON对象
+     */
+    jQuery.ajax = function (jsonArgs){
+        let xhr = new XMLHttpRequest();
+        xhr.onreadystatechange = function (){
+            if (xhr.readyState === 4){
+                if (xhr.status === 200){
+                    //先规定直接收JSON格式的字符串
+                    let jsonObj = JSON.parse(this.responseText);
+                    jsonArgs.success(jsonObj);
+                }
+            }
+        }
+        if (jsonArgs.type.toUpperCase() === "POST"){
+            xhr.open("POST",jsonArgs.url,jsonArgs.async);
+            xhr.setRequestHeader("Content-Type","application/x-www-form-urlencoded");
+            xhr.send(jsonArgs.data);
+        }
+        if (jsonArgs.type.toUpperCase() === "GET"){
+            xhr.open("GET",jsonArgs.url + "?" + jsonArgs.data,jsonArgs.async);
+            xhr.send();
+        }
+    }
+}
+/**
+ * 标识符可以由数字，字母，下划线，$组成
+ * 将jQuery这个单词换成 $ 标识符
+ */
+$ = jQuery;
+new jQuery();
+*********************************************************************
+Linux上的常用非关系型数据库有
+    MongoDB
+    CouchDB
+    Redis
+
+    Cassandra
+    HBase
+    Riak
+    OrientDB
+    RavenDB
+    Apache Lucene
+    Neo4j
+***********************************************************************
+AJAX实现省市联动
+    下拉列表实现，下拉列表具有change事件
+    选择省份的时候，动态关联出该市对应的区
+    数据库表设计：省市对应关系一对多，两张表，多的表添加外键
+    思路：
+    t_area省份
+    id(自增pk)    code(unique)              name
+    ____________________________________________
+
+    t_city市
+    id(自增pk)    code(fk unique 关联省份code)name
+    ____________________________________________
+
+    首先实现：
+        页面加载完毕将省份全部加载出来
+        select复选框标签，内部的选项是option标签 value=“...”
+        发送ajax请求，获取所有的省份，省份数据存储到对象中，存储到对象集合中
+        集合使用fastJSON生成json数组字符串，响应json字符串前端，前端进行解析展示
+
+    省市联动实现：
+        选中省份，select复选框发生change事件，获取选中省份的(value)code
+        发送ajax请求，将code提交给后端，后端使用parameter获取，查询数据库，找到对应省code下的所有市
+        存入对象集合中，fastJSON生成json字符串，相应给前端
+
+        后端可以将多个ps预编译对象使用if条件判断，不同情况不同sql传入不同的值
+
+**************************************************************************
+AJAX跨域问题
+    跨域：从一个域名的网页区请求另一个域名的资源
+    (同一台机器上启动多个服务器，需要保证端口不一样)
+
+    超链接的方式可以跨域 href
+    8081端口 b应用 访问 8080端口 a应用
+
+    form表单提交数据请求也可以跨域 action
+
+    JS代码中的window.location.href/document.location.href 超链接也可以跨域
+
+    传统的超链接方式发送的请求，可以类比servlet中重定向方法 支持跨域请求
+
+    在script标签中，加载另一个服务器站点中的js文件，是支持的，src本质上也是发送请求
+    可以请求资源，资源有 html js 图片<img src/>等
+    src资源得先被编译到web应用下 才可以超链接访问 没加载可以使用reBuild重新编译生成
+
+AJAX跨域问题
+    使用ajax发送跨域请求，报错，block by CORS policy 一种安全策略
+    被浏览器的同源策略所限制，也就是说只有在同源的情况下才能进行AJAX异步请求，
+    如果需要跨域请求，可以使用JSONP或CORS等方式
+****出现这个问题的根本原因是跨域的时候，不允许共享同一个 XMLHttpRequest 对象
+    因为共享一个XMLHttpRequest对象是不安全的，因为里面存有数据
+    如果被其他网站站点所获取，将会导致信息泄露，同源策略有利于保护网站信息
+****同源：
+    协议一致，域名一致，端口号一致，三个要素必须同时满足，才是同源
+    传统的href超链接形式的请求本质上是改浏览器地址，并不存在对象的公用，所以没有安全问题
+    ajax请求发送请求靠的是浏览器内存中的XMLHttpRequest对象，发送请求到另一个站点意味着
+    另一个站点与当前站点共享了此xhr对象，会导致信息泄露问题
+
+现在的系统大部分都是大型的应用，分布式的微服务架构，不同的服务会部署在不同的服务器上
+互相之间不同源
+解决方案：
+    1、设置响应头
+        原理：跨域访问的资源允许进行跨域访问
+        request.setHeader("Access-Control-Allow-Origin","http://localhost:8080");
+        表示允许后面URL这个源进行访问资源，* 表示所有
+
+    2、JSONP
+        JSON with padding 带填充的json
+        jsonp不是一个真正的ajax请求，可以达到ajax的局部刷新效果，可以说jsonp是一种类似ajax请求的机制
+        script标签可以跨域，src属性可以是js文件，这个文件也可以是一个servlet路径
+        //超链接href也是可以跨域，但是超链接点击后会刷新整个页面，故不能应用到局部刷新
+        然后在servlet中向前端输出，可以响应js代码，就相当于js代码写进了script标签中
+        然后浏览器调用script中的js代码，解释执行
+        故此，可以响应一段js代码，并传一个json数据给前端，函数名可以动态获取
+        故此，jsonp解决跨域问题的时候，只支持get请求，不支持post请求
+
+        使用js手动创建script标签元素(动态拼接JS代码)
+        window.onload = () =>{
+            document.getElementById("btn").onclick = () =>{
+                //加载script元素，创建script对象
+                const htmlScriptElement = document.creatElement("script");
+                //设置script的type属性
+                htmlScriptElement.type = "text/javascript";
+                //设置src属性
+                htmlScriptElement.src = "http://localhost:8081/b/jsonp2?fun=sayHello";
+                //将script对象添加到body标签中，就是加载script
+                document.getElementsByTagName("body")[0].appendChild(htmlScriptElement);
+            }
+        }
+        后端传回js指令：print(getParameter函数名 + 链接数据库获取的动态的JSON对象);
+        因为需要指定前端的函数来解析json并动态展示
+        这里的name=value
+        name是指定的函数，value是json字符串
+        jQuery包装后，函数名未指定则默认callback
+        函数未指定则默认生成，可以手动指定需要选择的动态展示函数
+        前端动态获取执行js
+        Jsonp和ajax没有关系，使用了script标签 js来实现跨域
+
+    3、jQuery封装的JSONP
+        类似ajax，jQuery也对jsonp也进行了封装，需要引入jQuery库的js文件(rebuild)，也可以cdn在线引入
+        底层原理相同，jQuery对其进行了工具化的高度封装，直接传参即可使用
+        注意：jsonp只支持get请求
+        function sayHello(data){
+            $("#mydiv").html("欢迎" + data.username);
+        }
+        $(function(){
+            $.ajax({
+                type : "GET",
+                //如果不带对应的信息 fun=sayHello
+                //jQuery会自动生成callback=.......(随机函数名)
+                //后面&_=时间戳，也是自动添加
+                url : "跨域URL",
+                dataType : "jsonp",     //关键
+                jsonp : "fun",          //指定函数名,不采用默认的callback
+                jsonpCallback : "sayHello",     //指定具体的回调函数，不采用默认生成的回调函数
+                /*success : function(data){     //没有上述属性指定时会默认调用success下的函数
+                    $("#mydiv").html("欢迎" + data.username);
+                }*/
+            })
+        })
+        后端获取函数名时需要getParameter("callback")
+        然后使用out.print() 将处理好的JSON传回前端，前端的js接收，使用自定义的函数来解析json并展示需要的数据
+        这个函数在前端script中，会由jQuery自动生成，参数是json。然后这个函数默认还会调用success中的回调函数
+
+****4、代理机制-httpclient
+        让ajax请求不去跨域，而是访问本应用下的servlet，交由此servlet完成跨域请求get、post到目标servlet
+        此servlet叫做代理 ProxyServlet
+        目标servlet将处理结果响应回ProxyServlet，再交由ProxyServlet响应到原请求
+        原理是让ajax请求避免了跨域
+        核心问题：ProxyServlet发送get/post 重定向会全局刷新且不能异步，不可以在此条件下使用
+            使用JDK内置的API(java.net.URL 用来发送Http请求)
+            使用第三方的开源组件 例如apache的httpclient组件(引入jar包到项目中)
+
+            使用httpclient本质上是用java代码模拟浏览器输入地址敲回车的行为
+
+        代码实现：main方法体(有点类似JDBC)
+        doGet方法
+        //目标地址
+        String url = "http://localhost:8080/b/hello";
+        //get请求对象，同理有post对象
+        HttpGet httpGet = new HttpGet(url);
+        //设置类型
+        httpGet.setHeader("Content-Type","application/x-www-form-urlencoded");
+        //获取URI
+        httpGet.getURI()
+        //httpClient实例化
+        CloseableHttpClient httpClient = HttpClients.createDefault();
+        //执行请求并获取响应实体 execute-执行 entity-实体
+        HttpResponse response = httpClient.execute(httpGet);
+        HttpEntity entity = response.getEntity();
+        //获取响应状态码
+        response.getStatusLine();
+
+        //以流的形式显示结果
+        BufferReader reader = new BufferedReader(new InputStreamReader(entity.getContent(),"UTF-8"));
+        String Line = null;
+        StringBuffer responseBuffer = new StringBuffer();
+        while((line = reader.readLine()) != null){
+            responseBuffer.append(Line);
+        }
+        System.out.println(responseBuffer);
+        //关闭流
+        reader.close();
+        //关闭httpClient
+        httpClient.close();
+
+        //将跨域的另一个服务器的响应结果相应给原请求
+        response.getWriter().print(responseBuffer);
+
+        注意：此代理机制支持post请求，jsonp不支持post请求
+
+    5、nginx反向代理
+        也是一种代理机制，来完成AJAX跨域，实现只需要修改一个nginx的配置文件即可
+*****************************************************************************************
+AJAX实现搜索联想，自动补全功能
+搜索框中输入上海：
+    上海
+    --上海疫情情况
+    --上海大学
+    --上海天气
+    ......
+    然后点击对应词条，会自动将搜索框中补全并搜索
+    可以提高用户使用体验
+
+    实现：
+        搜索联想和自动补全功能是页面局部刷新效果，所以需要使用ajax请求来完成
+        输入：键盘事件发生：keyup
+        发送ajax请求，提交用户输入的搜索内容。
+        后端接收到ajax请求，例如 上海 这两个字。然后执行select语句进行模糊查询，返回查询结果
+        将查询结果封装成json格式的字符串，将json格式的字符串相应到前端
+        前端接收到json格式的字符串之后，解析并动态展示
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

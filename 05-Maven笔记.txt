@@ -1,0 +1,38 @@
+maven小提示
+    main下的resources目录，放入其中的一般都是资源文件，配置文件properties等。
+    直接放到resources目录下的资源，等同于放到了类的根路径下
+    在properties标签中设置build源代码和报告输出的编码格式
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+
+dtd
+    文档类型规范，文档类型约束
+    <!DOCTYPE configuration
+            PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+            "http://mybatis.org/dtd/mybatis-3-config.dtd">
+        规定了mybatis-config.xml中的文件格式，顺序，嵌套规则，属性值，必须严格遵循
+开发步骤
+    1、打包方式jar
+    2、引入依赖
+        myBatis
+        MySql驱动
+    3、从XML中构建SqlSessionFactory（一个项目一个）
+        编写MyBatis核心配置文件 mybatis-config.xml （其位置和名称不固定，但约定俗成）
+        mybatis-config中可以配置链接数据库的各种信息等。
+        放置在类的根路径下
+    4、编写xxxMapper.xml（一个表一个）
+        用来专门编写SQL语句的配置文件
+        t_user表，对应UserMapper.xml
+        t_student,对应StudentMapper.xml
+        ...
+        放置在类的根路径下
+    5、在mybatis-config.xml文件中指定xxxMapper.xml文件的路径
+        resources属性会自动从类的根路径下开始寻找
+    6、编写myBatis程序
+        使用myBatis的类库，连接数据库，完成增删改查操作
+        在MyBatis中，负责执行SQL语句的对象是 SqlSession （session是会话，代表着JVM与数据库的会话）
+        想获取SqlSession对象，就要先获取SqlSessionFactory对象
+        每个基于MyBatis的应用都是以一个SqlSessionFactory为核心的（工厂模式）
+        SqlSessionFactory 的实例可以通过 SqlSessionFactoryBuilder 获得（build方法）
+        而 SqlSessionFactoryBuilder 则可以从 XML 配置文件或一个预先配置的 Configuration 实例来构建出 SqlSessionFactory 实例
+

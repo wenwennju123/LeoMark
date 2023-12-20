@@ -1,0 +1,578 @@
+复习javaWeb 过一遍
+springMVC
+	是针对控制器的一个优化
+	提供了更好的数据 提交注入，自动类型转换， 简单的页面跳转， 更好的数据携带， 拦截器权限验证等
+
+是Spring框架的一员，核心是IoC和AOP
+
+什么是Spring框架
+	容器，管理兼容整合其他框架，管理bean以及依赖，解耦合
+什么是myBatis框架
+	优化JDBC访问，数据访问层持久化层框架，简化访问数据库的配置，使得更专注于sql语句的访问
+什么是SpringMVC框架
+	基于MVC开发模式的框架，用来优化 Controller 控制器的，是Spring家族的一员，核心是IoC和AOP
+什么是MVC
+	一种开发模式，model Controller view 模型 视图 控制器，所有的web应用都是基于MVC开发的
+Model：
+	包含 实体类，业务逻辑层，数据访问层
+View：
+	html JS Vue React等 用来呈现数据
+Controller
+	接收客户端的请求，并返回服务器的响应结果到客户端
+	Servlet HttpServlet等组件
+SpringMVC框架的优点：
+	轻量级，基于MVC的框架
+	不污染代码
+	支持全注解开发
+
+时序图
+client------tomcat------web.xml------springMVC------controller------service------mapper------db
+  http(AJAX)请求
+                查看项目的配置文件
+                        配置了框架后将控制权交给框架
+                                        调用controller控制器
+                                                          调用业务逻辑层
+                                                                       调用数据访问等
+                                                                               执行数据库增删改查等操作
+
+SpringMVC优化了数据提交，数据携带，以及简化响应，简化返回处理，简化页面跳转等
+注意要优化的是 Controller 层
+
+SpringMVC框架的核心处理器 DispatcherServlet
+
+执行流程
+{{客户短发送请求到 DispatcherServlet，然后将其转发到HandlerMapping 地址映射器，然后调用HandlerAdapter 处理器适配器，创建处理器对象，
+调用HttpMessageConverter，调用DataBinder进行数据转换，数据格式化，数据验证等操作，调用Handler，}}来调用业务逻辑层。
+
+业务逻辑层将处理好的数据依次返回，{{转换，格式化等操作处理完毕后，由HandlerAdapter再返回DispatcherServlet(Model and View) ,
+然后交给ViewResolver 视图解析器完成返回客户端地址的拼接，会自动完成前缀与后缀的拼接。最后DispatcherServlet将数据交给View层，、
+由前端框架进行解析，展示，显示在客户端浏览器上}}
+
+基于注解的SpringMVC框架开发步骤
+    新建项目，选择webapp(maven)模板，
+    修改目录，添加test，java，resources，修改目录属性
+    修改pom.xml我呢见，添加依赖springmvc，servlet，mybatis，jdbc，junit，druid等等
+    添加配置文件springmvc.xml，指定包扫描，添加视图解析器，
+    修改web.xml文件，注册springmvc框架，添加servlet配置。
+    修改欢迎页index.jsp
+    编写控制器Servlet，（是一个普通的类）
+    配置Tomcat
+
+配置springmvc配置文件
+
+    <!--SpringMVC 添加视图解析器，使用的是字符串拼接-->
+    <!--用于简化 响应 的路径-->
+    <bean class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+        <!--配置前缀-->
+        <property name="prefix" value="/admin/"/>
+        <!--配置后缀-->
+        <property name="suffix" value=".jsp"/>
+    </bean>
+
+在web.xml中配置DispatcherServlet
+    使用servlet servlet-mapping标签来配置
+    <servlet>
+        <servlet-name>springmvc</servlet-name>
+        <servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>
+
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>springmvc</servlet-name>
+        <!--指定对应的请求路径走此Servlet-->
+        <!--拦截路径后缀是 .action 的请求-->
+        <!-- 举例： <a href="${pageContext.request.contextPath}/demo.action">点击访问</a> -->
+        <url-pattern>*.action</url-pattern>
+    </servlet-mapping>
+
+@RequestMapping注解分析：
+    可以出现在类上或方法上
+    加在类上相当于是包名（虚拟路径），可以区分不同包下不同模块的相同方法等
+    用于映射服务武器访问的路径，类比之前的@WebService()
+
+    此注解可以区分get请求合post请求
+    @RequestMapping(value = "/cget.action", method = RequestMethod.GET) 添加注解的参数来指定请求类型
+    返回值为void 则默认返回请求路径jsp
+
+*******************************************************************************
+数据提交到action的形式，SpringMVC进行的优化
+    五种数据提交的方式：
+        1、散提交数据（单个数据提交） name=value&name=value&...
+            前端<input name="name">
+               <input name="age">
+            方法的形参名字与前端提交保持一致，SpringMVC便可以优化接收。并可以匹配类型自动转换
+            public String fun(String name, int age){}
+
+        2、对象封装数据提交
+            实体类User属性：String name, int age，纳入容器管理
+            前端<input name="name">
+            <input name="age">
+            方法传参(User user){}
+            SpringMVC会自动将数据注入到实体类中，并传递给action方法
+
+        3、动态占位符提交，仅限于超链接或地址栏(路径)提交数据，使用注解来解析（不建议使用）
+            前端：<a href="${pageContext.request.contextPath}/three/张三/22.action" />
+            注解：@RequestMapping("/three/{name}/{age}")
+            对应 一个/ 传一个值，对应一个 {} 用来接收
+                接收：(@PathVariable("name") String name, @PathVariable("age") int age)
+                使用@PathVariable来修饰形参列表来接收路径中的数据，顺序对应，起了别名则填写对应的别名
+
+        4、映射名称不一致的情况：请求参数名称映射+手工提取数据的提交方式
+            接收：(@RequestParam("name") String userName, @RequestParam("age") int userAge)
+            SpringMVC可以将接收到的数据，转换成对应的，并注入给新的参数，可以解决名称不一致的问题
+            举例：项目开发阶段，前后端同步开发，后期项目合并的时候，对参数进行同一的注解命名，核对。
+
+        5、手工提取 同JavaWeb
+            Spring会传参request对象
+            public String five(HttpServletRequest request){
+                request.getParameterNames();
+                遍历
+                String name = request.getParameter("name");
+            }
+
+注意：post请求中文乱码解决方案
+    在web.xml中配置中文编码过滤器
+    <filter>
+        <filter-name>encode</filter-name>
+        <filter-class>org.springframework.web.filter.CharacterEncodingFilter</filter-class>
+        <!--参数配置-->
+        <init-param>
+            <param-name>encoding</param-name>
+            <param-value>UTF-8</param-value>
+        </init-param>
+        <init-param>
+            <param-name>forceRequestEncoding</param-name>
+            <param-value>true</param-value>
+        </init-param>
+        <init-param>
+            <param-name>forceResponseEncoding</param-name>
+            <param-value>true</param-value>
+        </init-param>
+    </filter>
+    <filter-mapping>
+        <filter-name>encode</filter-name>
+        <!--过滤全部路径-->
+        <url-pattern>/*</url-pattern>
+    </filter-mapping>
+
+******************************************************************************
+action方法的返回值类型
+    String 返回部分路径 通过ViewResolver 视图解析器 拼接成完整访问路径（客户端资源的地址）
+            也可以设置屏蔽自动拼接字符串，也可以手动指定返回的路径
+    Object 返回json格式的对象，自动将对象或集合转换为json字符串 使用的是jackson工具转换（jackson依赖）
+            一般用于AJAX请求
+    void 无返回值，一般用于ajax请求 （区域局部刷新）
+    基本数据类型 用户AJAX请求
+    ModelAndView：返回数据合视图对象，用的很少
+
+*****************************************************************************
+ajax四步
+    添加jackson依赖
+    在webapp目录下新建js目录，添加jQuery函数库（Vue中对ajax的包装是axios）
+    在index.jsp页面上导入函数库
+    在action上添加注解 @ResponseBody 用来处理ajax请求（或者在类上使用@RestController注解，表示整个类中方法均为）
+    在springmvc.xml 我呢见中添加注解驱动 <mvc:annotation driven /> 用来解析@ResponseBody 注解
+实例：
+    <script type="text/javascript">
+        function showStu() {
+            /*使用jQuery封装的ajax()方法*/
+            $.ajax({
+                url:"${pageContext.request.contextPath}/list.action",
+                type:"get",
+                dataType:"json",
+                success:function (stuList){
+                    let s = "";
+                    /*each函数遍历json数组*/
+                    $.each(stuList, function (i, stu) {
+                        s += stu.name + "----" + stu.age + "<br>";
+                    })
+                    /*回显数据到div中*/
+                    $("#mydiv").html(s);
+                }
+            });
+        }
+    </script>
+
+******************************************************************************
+页面跳转的四种方式
+    请求转发页面(默认)      forward
+    请求转发action
+    重定向页面             redirect
+    重定向action
+
+复习：请求转发与重定向的区别
+    请求转发会获取请求转发器，基于服务器端的一个跳转，会将原请求request对象作为参数传过去，转发后的请求与原请求处在同一请求域当中
+        （地址依旧是原请求 地址保持不变）
+    重定向是基于客户端的跳转，重新发起一次全新的请求，地址栏会变化，是新的请求的地址（需要webapp名称）
+
+默认使用视图解析器 拼接前缀后缀进行页面跳转的方式属于：请求转发页面
+    视图解析器若遇到forward: 或者 redirect: 关键字时，会屏蔽掉前后缀的拼接
+
+    请求转发页面 默认 会拼接前后缀   return "main";
+    请求转发action    return "forward:/other.action";
+    (重定向需要加项目名)
+    重定向页面        return "redirect:/admin/main.jsp";
+    重定向action     return "redirect:/other.action";
+
+******************************************************************************
+SpringMVC 调用 action方法时 传递的默认参数，action方法中可以出现的参数
+    HttpServletRequest      request
+    HttpServletResponse     response
+    HttpSession             session
+    Model                   model
+    Map                     map
+    ModelMap                modelMap
+
+    其中，Map Model ModelMap HttpServletRequest 均为请求域级别的对象，故只有保证同一请求域下的请求转发才可以使用
+
+数据的存取
+    request.setAttribute("requestUser", new User("张三", 20));
+    session.setAttribute("sessionUser", new User("张三", 20))
+    model.addAttribute("modelUser", new User("张三", 20))
+    map.put("mapUser", new User("张三", 20))
+    modelMap.addAttribute("modelMapUser", new User("张三", 20))
+
+前端使用EL表达式进行取用,EL表达式取数据按域从小到大范围自动查询，可以添加上 域. 来指定要查找的域（最小域原则）
+    ${requestUser}
+    ${sessionUser}
+    ${modelUser}
+    ${mapUser}
+    ${modelMapUser}
+取用请求中的参数
+    请求路径中添加 &name=value&name2=value2。。。
+    取用：${param.name}
+
+******************************************************************************
+日期数据的注入与提取显示 特殊处理
+
+注入：Spring对日期类型的处理
+    Date是简单类型，但是简单类型难以使用，当作非简单类型，套一个工厂Bean上去做加工增强
+
+    前端向后端返回的数据均为json字符串，springmvc可以对json字符串解析，称为json格式对象，后端从json对象中取用数据
+
+    单个日期处理：
+        注解：@DataTimeFormat，此注解前提是springmvc.xml配置中的注解驱动<mvc:annotation-driven/>   (事务注解驱动前面是tx)
+            通过注解的param属性指定具体的 字符串转换为日期类型的格式
+        SimpleDateFormat sf = new SimpleDateFormat("yyyy-MM-dd");
+        public String myDate(
+                    @DataTimeFormat(pattern = "yyyy-MM-dd") //将对应格式的字符串转换为Date类型并注入
+                    Date myDate,
+                    HttpServletRequest request){
+            System.out.println(sf.format(myDate));   //将date类型转换为格式化类型字符串并输出到控制台
+
+            request.setAttribute("myDate", sf.format(myDate));   //将优化格式的字符串存入请求域返给前端
+            return ;
+        }
+
+    全局日期处理：
+        注册注解，用来解析本类中的所有日期类型，自动转换。这个方法中可以定义很多类型的转换机制逻辑
+        SimpleDateFormat sf = new SimpleDateFormat("yyyy-MM-dd");
+        @InitBinder
+        public void initBinder(WebDataBinder dataBinder){
+            //注册自定义工具(类型，对应的转换器工具)
+            dataBinder.registerCustomEditor(Date.class, new CustomDateEditor(sf, true));
+        }
+
+对于SimpleDateFormat format方法是将日期类型Date转换为字符串
+                    parse方法是将字符串转化为日期类型
+
+
+前端日期的显示：
+    使用JSTL标签库，添加依赖，导入标签库，使用标签显示数据
+    取用：
+        ${myDate}
+    如果是多个日期格式的字符串集合 例如list集合，需要使用JSTL标签库中 foreach标签 遍历集合取出（故前后端传递数据建议使用json格式）
+        pojo对象中有Date类型的属性，手动赋值 sf.parse("2000-01-01")
+        前端从请求域request中接收了 list 集合对象，list集合中存有学生类pojo，学生类具有日期类型的属性birth,和String类型的属性name
+
+        添加依赖：jstl
+            导入jstl核心标签库 c，导入jstl格式化标签库
+        解析方法：直接展示到<table> 标签中
+        <table width="800px" border="1px">
+            <tr>
+                <th>姓名</th>
+                <th>生日</th>
+            </tr>
+            <c:forEach items="${list}" var="stu">
+                <tr>
+                    <td>${stu.name}</td>
+                    <td> <fmt:formatDate value="${stu.birth}" pattern="yyyy-MM-dd"/> </td>
+                </tr>
+            </c:forEach>
+        </table>
+
+@DataTimeFormat(pattern = "yyyy-MM-dd" 注解可以使用在方法的参数上，也可以使用在pojo类的属性的set方法上，或者pojo类的属性上
+
+如果返回客户端的是json数据，需要在实体类的属性的get方法上使用#@JsonFormat(pattern="yyyy-MM-dd") 注解
+
+**************************************************************************************************
+SpringMVC执行流程分析
+
+    <mvc:annotation-driven/> 标签的使用
+    这个mvc注解驱动标签底层会注册两个bean，分别为：
+        DefaultAnnotationHandlerMapping 和 AnnotationMethodHandlerAdapter
+    是SpringMVC分发请求必须的组件
+    提供了支持：
+        支持使用ConversionService 实例对表单参数进行类型转换
+        支持使用@NumberFormat，@DateFormat
+        注解完成数据类型的格式化
+        支持使用@ResquestBody 和 #ResponseBody
+        静态资源的分流也可也使用此标签
+
+*************************************************************************************************
+WEB-INF目录下的资源
+    安全性，其下的动态资源必须通过请求转发的形式进行访问。避免了通过地址栏直接对资源的访问，重定向也无法访问动态资源
+    请求转发访问：
+        修改视图解析器bean 前缀：
+        <property name="prefix" value="/WEB-INF/jsp/" />
+
+**************************************************************************************************
+登录业务的实现
+    避免直接输入地址访问
+拦截器
+    Interceptor 拦截用户请求
+    针对请求和响应进行额外的处理，可以添加预处理，后处理和最终处理    postHandle() afterCompletion()
+时机：   preHandle() 请求被处理之前，
+        postHandle() 请求被处理之后，但是还没有到视图层进行渲染，可以改变响应的结果
+        afterCompletion() 所有的请求相应结束后执行善后工作，清理对象，关闭资源
+实现方式：
+    继承父类：(不建议)
+        HandlerInterceptorAdapter
+    实现接口：
+        HandlerInterceptor接口
+开发步骤：
+    实现接口，重写preHandle()方法
+        此接口中三个方法均有default修饰（JDK8），具有默认实现。按找需求重写对用的方法
+        preHandle()默认返回true 默认放行
+    在session重存储用户信息，用户进行权限验证(实际用token 令牌 比较多)
+        request.getSession().setAttribute()
+    在springmvc.xml配置文件中注册拦截器
+        <mvc:interceptors>
+            <mvc:interceptor>
+                <!--映射要拦截的请求路径-->
+                <mvc:mapping path=""/>
+                <!--设置放行的请求路径-->
+                <mvc:exclude-mapping path=""/>
+                <!--配置具体的拦截器的实现类-->
+                <bean class=""/>
+            </mvc:interceptor>
+        </mvc:interceptors>
+    拦截器可以配置拦截器链，配置多个拦截器（责任链设计模式）同过滤器链
+
+**************************************************************************************
+SSM整合配置
+开发步骤：
+    pom文件配置：依赖
+        junit
+        spring-test
+        spring-context
+        spring-webmvc
+        spring-aspects
+        spring-jms
+        spring-context
+        spring-jdbc
+        mybatis
+        mybatis-spring
+        mysql-connector-j
+        slf4j-api
+        log4j-core
+        druid
+        pageHelper
+        jakarta.servlet-api
+        jsp-api
+        jstl
+        jackson
+        jakarta.annotation-api
+        并配置资源文件识别路径
+    mybatis-config.xml配置文件
+        配置环境配置，开启日志，驼峰命名转换等
+    springMVC.xml配置文件
+        添加命名空间：context，aop，tx，mvc
+        mapper相关配置
+            指定外部properties配置文件引入路径classpath:
+            配置数据源druid
+            配置SqlSessionFactoryBean，注入mybatis核心配置，包的别名，路径与注入数据源
+            配置mapper扫描配置器，指定mapper包，扫描接口动态生成代理类
+        service相关配置
+            添加包扫描component-scan 指定service包
+            配置事务管理器bean，绑定数据源
+            启用事务注解驱动annotation-driven
+            开启aop自动代理，扫描@Aspect注解aspectj-autoproxy
+            手动配置通知，配置通知相关属性，匹配方法名，事务传递属性与rollback-for
+            配置切面，指定切点，切点表达式，切面=通知+切点
+        controller相关配置
+            添加包扫描component-scan
+            启用mvc注解驱动
+            无需添加视图解析器，全部使用ajax请求，json格式
+    web.xml文件配置
+        配置中文编码过滤器CharacterEncodingFilter,UTF-8,参数均为true
+        注册SpringMVC框架
+            配置DispatcherServlet（核心）
+                servlet-name 中指定配置文件路径 contextConfigLocation classpath springmvc.xml
+                servlet-mapping 中配置请求路径拦截 url-pattern *.action
+        注册Spring框架
+            启动spring容器，配置项目相关的监听器org.springframework.web.context.ContextLoaderListener
+            配置配置文件的位置context-param classpath:    .xml 可以使用通配符
+    编写实体类pojo
+        对应数据库表字段
+        提供无参，全参（除去自增主键）构造方法，set get toString方法
+    编写mapper接口
+        提供增删改查等方法，按需提供（分页，附带条件的分页，动态sql）
+        根据接口文档，架构需求进行编写
+    编写Service接口
+        根据接口文档，架构需求进行编写
+    编写ServiceImpl实现类
+        编写具体业务逻辑
+    编写test程序
+        @RunWith(SpringJUnit4ClassRunner.class)
+        Junit测试，启动spring框架，自动注入
+        @ContextConfiguration(locations = {"classpath:springmvc.xml", "classpath:mybatis-config.xml"})
+    开发控制器Controller
+        根据接口文档编写，对照映射名称
+        解析客户端发送过来的 AJAX跨域 请求，调用service完成业务处理，将处理结果返回view层
+
+*********************************************************************************************
+SSM整合，控制器支持跨域访问+端口修改
+    跨端口 属于跨域的一种 8080 ---- 8082
+    跨协议 属于跨域的一种 http ---- https
+    跨服务 属于跨域的一种 不同服务器
+    @CrossOrigin注解表示在服务器端支持跨域访问
+
+前端框架介绍
+    Vue 前端框架
+    Element UI 界面优化
+        https://element.eleme.cn 推荐npm安装
+        官网具有各类组件演示，可以按需选择
+
+    node.js 使用vue的预安装的工具，类似JDK于java
+    Idea整合 配置 vue插件----plugin--vue.js
+
+    指令：进入当前要运行的vue项目的目录下，运行命令进行项目搭建
+    cd E:\idea_workspace\vueDemo01
+    npm i element -ui -S 下载elementUI框架
+    npm install 打包项目
+    npm install -save vue-axios 下载axios跨域访问组件
+
+    在config文件夹下 index.js 中target配置/api 域名
+        'api' :{
+            target: 'http://localhost:8082',
+            changeOrigin: true,
+            pathRewrite:{
+                '/api': '/'
+            }
+        }
+
+    src文件目录 用于存放源码文件
+    static目录 用于存放静态资源
+    package.json 显示当前所有的依赖选项 版本号
+
+组件和路由配置
+    src下的assets 当前项目用到的资源
+    components 组件域
+        HelloWorld.vue
+        UserHome.vue
+    router 路由域
+        index.js
+    App.vue 入口组件
+    main.js 配置Vue的各种内容
+        Vue.use(ElementUI)
+        Vue.prototype.$axios = axios
+        Vue.prototype.qs = qs    自动转json字符串
+        new Vue({
+            el: '#app'
+            router,      路由域
+            components: {app},      注册挂载组件 组件名
+            template: '<App/>'     使用组件，引入文件
+        })
+
+钩子函数created() 详解
+    created() {
+        this.handlePageChange();
+        this.getRowCount();
+    }
+    页面启动时自动调用
+    method: {
+        handlePageChange{
+            ...
+        },
+        getRowCount(){
+            // postData={"page":"1", "userName":"张三" ,"userSex":"男"}
+            let postData = this.qs.stringify({           调用stringify进行数据转换，转换为json格式对象
+                userName:this.formInline.search1,
+                userSex:this.formInline.search2
+            });
+            this.$axios({                   //ajax跨域访问
+                method:'post',
+                url:'/api/user/getRowCount',
+                data:postData
+            }).then(response=>{             //success:function(){}
+                this.total=response.data;   //response.data==>服务器返回的五条数据
+            }).catch(error=>{               //error.function(){}
+                console.log(error);
+            })
+        },
+    }
+
+Element UI
+    前端格式
+    <template>
+        <div>
+            <el-form>
+                <el-form-item>
+                    <el-input v-model="" size="" placeholder="" v-on:input=""></el-input>
+                </el-form-item>
+                <el-form-item>
+                    <el-select>
+                        <el-option lable="" value=""></el-option>
+                        ...
+                    </el-select>
+                </el-form-item>
+                <el-form-item>      @click 绑定单击事件 触发回调函数或者语句
+                    <el-button icon="el-icon-circle-plus-outline" type="text" @click="dialogAdd=true">添加</el-button>
+                </el-form-item>
+                <el-form-item>
+                    <el-button icon="el-icon-delete" type="text" @click="handleDeleteList()">删除</el-button>
+                </el-form-item>
+                ...
+            </el-form>
+            <el-table>
+                <el-table-column>
+                    <template>
+                        <el-popover>
+                            <p>{{scope.row.cardType}}</p>
+                            <p>{{}}</p>
+                            <p>{{}}</p>
+                            ...
+                        </el-popover>
+                    </template>
+                </el-table-column>
+                ...
+            </el-table>
+        </div>
+        <div>
+            ...
+        </div>
+        ...
+    </template>
+
+    <el-dialog title="" :append-to-body="true" :visible.sync="dialogAdd" :before-close="handleClose">
+    允许异步访问
+
+    handleEdit(index, row){
+        this.dialogUpdate = true;
+        row.userAge = Num(row.userAge);
+        this.ruleForm = Object.assign({}, row, index);    关键，完成数据回显
+    },
+
+
+Vue
+    模板语法
+    事件处理
+        单向数据绑定，双向数据绑定
+        只有表单元素有value的属性才有双向绑定
+    组件创建
+        父组件，子组件之间数值的传递
+
+
+
+
+

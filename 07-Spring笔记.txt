@@ -1,0 +1,1991 @@
+Spring6笔记
+    Spring6被称作下个十年的开端，需要JDK17及以上的版本
+    分析普通的三层架构的问题
+        dao
+        service
+        web
+
+软件开发七大原则：
+    OCP，开闭原则，基本原则，其他的六个原则式服务此原则的
+    对扩展开放，对修改关闭。在扩展功能的时候，没有修改以前写好的代码，就是符合OCP原则的
+    （依赖倒置原则DIP：高层模块不应该依赖底层模块，二者都应该依赖其抽象
+                    抽象不应该依赖细节，细节应该依赖抽象
+                ****面向接口，抽象编程，不要面向具体编程
+                ****凡是上依赖下的，都违背了依赖倒置原则
+                也就是不要去new实现类去复制给成员变量(强依赖)，引入spring的自动注入机制
+                将对象的创建，关系管理交给框架
+
+    单一职责原则SRP：一个类，接口，方法只负责一项职责
+
+    接口隔离原则ISP：使用多个专门的接口，而不是单一的总接口，客户端不应该依赖它不需要的接口
+
+    迪米特法则LoD：一个对象应该对其他对象保持最少的了解，又叫最少知道原则，尽量降低类与类之间的耦合
+
+    里氏替换原则LSP：子类可以扩展父类的功能，但不能改变父类原有的功能
+
+    合成复用原则CARP：尽量使用对象组合，聚合而不是继承关系达到软件复用的目的，
+                   组合，聚合也叫黑箱复用，对类意外的对象式无法获取到实现细节的，
+                   降低类与类之间的耦合度，一个类的变化对其他类造成的影响相对较小）
+
+**********************************************************************************
+重要的编程思想：
+控制反转IoC Inversion of Control
+    反转：
+        不在程序中采用硬编码的方式来new对象，交给其他
+        不在程序中采用硬编码的方式维护对象之间的关系，维护也交给其他
+    控制反转：是一种编程思想，或者叫一种新型的设计模式。（由于出现的时间较新，没有被纳入GoF23种设计模式范围内）
+
+Spring框架：
+    是实现了IoC控制反转这一思想的(框架)容器，可以new对象，管理、维护对象和对象之间的关系
+    控制反转的实现方式有多种，其中个比较重要的叫做：依赖注入 Dependency Injection DI
+****控制反转是思想，依赖注入是这种思想的具体实现方式。
+    而依赖注入DI包含常见的两种方式：
+        set注入：执行set方法给属性赋值
+        构造方法注入：执行构造方法给属性赋值
+    (对应Java种给属性赋值的两种方式)
+****依赖指的是A对象和B对象之间的关系，注入是一种手段，可以让A对象和B对象产生关系
+    依赖注入：对象A和对象B之间的关系靠注入的手段来维护
+        A类中有一个属性，是B类型的。就称作A依赖了B
+****控制反转主要解决了软件不符合OCP和DIP的问题
+
+**********************************************************************************
+Spring
+    Spring是一个轻量级的控制反转Ioc和面向切面编程AoP的容器框架
+        解决了EJB(企业级JavaBean)臃肿的设计，以及难以测试的问题。并且简化了开发，只需要关注核心业务的实现(AoP)
+        尽可能的不再关注非业务逻辑代码，例如事务控制，安全日志等
+    Spring8大模块
+    ****Spring Core:核心，基石
+            提供了依赖注入DI特征来实现容器对Bean的管理。核心容器的主要组件是BeanFactory。
+            BeanFactory是工厂模式的一个实现，是任何Spring应用的核心。它使用IoC将应用配置和依赖从实际的应用代码中分离出来
+            AoP底层实现种包含了IoC，其他六个模块的实现都包含了AoP和IoC
+    ****Spring Context:上下文
+            如果说核心模块中的BeanFactory使Spring成为容器的话，那么Context上下文模块就是Spring成为框架的原因。
+            这个模块扩展了BeanFactory，增加了对国际化（I18N）消息、事件传播、验证的支持。另外提供了许多企业服务，
+            例如电子邮件、JNDI访问、EJB集成、远程以及时序调度（scheduling）服务。
+            也包括了对模版框架例如Velocity和FreeMarker集成的支持
+    ****Spring AOP:面向切面编程
+            Spring在它的AOP模块中提供了对面向切面编程的丰富支持，Spring AOP 模块为基于 Spring 的应用程序中的对象提供了事务管理服务。
+            通过使用 Spring AOP，不用依赖组件，就可以将声明性事务管理集成到应用程序中，可以自定义拦截器、切点、日志等操作
+    ****Spring DAO:JDBC的api
+            提供了一个JDBC的抽象层和异常层次结构，消除了烦琐的JDBC编码和数据库厂商特有的错误代码解析，用于简化JDBC
+    ****Spring ORM:支持集成其他的ORM框架
+            Spring提供了ORM模块。Spring并不试图实现它自己的ORM解决方案，而是为几种流行的ORM框架提供了集成方案，
+            包括MyBatis、Hibernate、JDO和iBATIS SQL映射，这些都遵从 Spring 的通用事务和 DAO 异常层次结构
+    ****Spring Web MVC:spring自己内置的mvc架构框架
+            也叫SpringMVC，Spring为构建Web应用提供了一个功能全面的MVC框架。虽然Spring可以很容易地与其它MVC框架集成，
+            例如Struts，但Spring的MVC框架使用IoC对控制逻辑和业务对象提供了完全的分离。
+    ****Spring WebFlux：响应式web框架
+            Spring Framework 中包含的原始 Web 框架 Spring Web MVC 是专门为 Servlet API 和 Servlet 容器构建的。
+            反应式堆栈 Web 框架 Spring WebFlux 是在 5.0 版的后期添加的。
+            它是完全非阻塞的，支持反应式流(Reactive Stream)背压，并在Netty，Undertow和Servlet 3.1+容器等服务器上运行。
+    ****Spring Web：支持集成其他的web框架
+            Web 上下文模块建立在应用程序上下文模块之上，为基于 Web 的应用程序提供了上下文，提供了Spring和其它Web框架的集成，
+            比如Struts、WebWork。还提供了一些面向服务支持，例如：实现文件上传的multipart请求。
+
+*****************************************************************************
+Spring特点
+    1. 轻量
+      a. 从大小与开销两方面而言Spring都是轻量的。完整的Spring框架可以在一个大小只有1MB多的JAR文件里发布。
+        并且Spring所需的处理开销也是微不足道的。
+      b. Spring是非侵入式的：(侵入式设计：某些类型或者api是依赖其他的api或者容器，不方便做单元测试。因为此框架的运行需要其他的支持)
+         Spring应用中的对象不依赖于Spring的特定类。
+    2. 控制反转
+      Spring通过一种称作控制反转（IoC）的技术促进了松耦合。当应用了IoC，
+      一个对象依赖的其它对象会通过被动的方式传递进来，而不是这个对象自己创建或者查找依赖对象。
+      你可以认为IoC与JNDI相反——不是对象从容器中查找依赖，而是容器在对象初始化时不等对象请求就主动将依赖传递给它。
+    3. 面向切面
+      Spring提供了面向切面编程的丰富支持，允许通过分离应用的业务逻辑与系统级服务（
+      例如审计（auditing）和事务（transaction）管理、日志、安全等）进行内聚性的开发。
+      应用对象只实现它们应该做的——完成业务逻辑——仅此而已。它们并不负责（甚至是意识）其它的系统级关注点，例如日志或事务支持。
+    4. 容器
+      Spring包含并管理应用对象的配置和生命周期，在这个意义上它是一种容器，
+      你可以配置你的每个bean如何被创建——基于一个可配置原型（prototype），
+      你的bean可以创建一个单独的实例或者每次需要时都生成一个新的实例——以及它们是如何相互关联的。
+      然而，Spring不应该被混同于传统的重量级的EJB容器，它们经常是庞大与笨重的，难以使用。
+    5. 框架
+      Spring可以将简单的组件配置、组合成为复杂的应用。在Spring中，应用对象被声明式地组合，典型地是在一个XML文件里。
+      Spring也提供了很多基础功能（事务管理、持久化框架集成等等），将应用逻辑的开发留给了你。
+
+    所有Spring的这些特征使你能够编写更干净、更可管理、并且更易于测试的代码。它们也为Spring中的各种模块提供了基础支持。
+
+**********************************************************************************
+Spring的下载与引入
+    官网spring.io --- github 下载
+        docs---api文档
+        libs---jar包 javadoc.jar是注释生成的帮助文档 sources.jar是源码
+        schema---约束spring的配置文件标签格式的xsd文档，类比于约束xml文件格式的dtd文档
+    maven管理，引入spring的各种模块 context、core、web、beans、webMVC、AOP、TestContext FrameWork
+    <repository>
+        <id>repository.spring.milestone</id>
+        <name>Spring Milestone Repository</name>
+        <url>https://repo.spring.io/milestone</url>
+    </repository>
+
+    ...
+
+    <dependency>
+        <groupId>org.springframework</groupId>
+        <artifactId>spring-context</artifactId>
+        <version>6.0.0-M2</version>
+    </dependency>
+    目前已更新到6.0.9 无需上述操作直接引入
+
+    jar包讲解：
+        aop:这个jar 文件包含在应用中使用Spring 的AOP 特性时所需的类
+        aspects:提供对AspectJ的支持，以便可以方便的将面向切面的功能集成进IDE中
+        beans:这个jar 文件是所有应用都要用到的，它包含访问配置文件、创建和管理bean
+            以及进行Inversion ofControl / Dependency Injection（IoC/DI）操作相关的所有类。
+            如果应用只需基本的IoC/DI 支持，引入spring-core.jar 及spring-beans.jar 文件就可以了。
+        context:这个jar 文件为Spring 核心提供了大量扩展。可以找到使用Spring ApplicationContext特性时所需的全部类，
+            JDNI 所需的全部类，instrumentation组件以及校验Validation 方面的相关类。
+        core:spring 框架基本的核心工具类。Spring 其它组件要都要使用到这个包里的类，是其它组件的基本核心
+        jdbc:Spring对JDBC的支持
+        orm:Spring集成ORM框架的支持，比如集成hibernate，mybatis等
+        tx:为JDBC、Hibernate、JDO、JPA、Beans等提供的一致的声明式和编程式事务管理支持
+        web:Spring集成MVC框架的支持，比如集成Struts等
+        webflux:WebFlux是Spring5添加的新模块，用于web的开发，功能和SpringMVC类似，Webflux使用当前一种比较流程响应式编程出现的框架。
+        webmvc:SpringMVC框架的类库
+
+    （注：使用springboot后会更加简单）
+
+*********************************************************************
+注意：
+    bean标签的id不可以重复，否侧报错配置问题，id已使用
+    bean的实例化：底层通过反射机制调用(默认)无参构造方法来创建对象
+        Class.forName 获取构造方法 执行无参构造
+    创建好的对象会被存储到Map<String, Object> 这样的Map集合当中
+        key对应id Object为对应的对象
+    spring配置xml文件 文件名随意 但见名知意
+    xml配置文件可以有多个，
+        new ClassPathXmlApplicationContext("spring.xml","beans.xml")
+        构造方法的参数是可变长参数，可以些多个配置文件路径进去
+    如果bean的id不存在，不会null，而是出现异常
+    默认返回的bean是Object类型，需要强转
+    不想强转可以applicationContext.getBean("nowTime",Date.class);
+    通过第二个参数指定要强转的类型class(返回的bean的类型)
+
+    另一种加载xml配置文件的方式-不常用   (ClassPathXmlApplicationContext)
+        FileSystemXmlApplicationContext("文件绝对路径")
+
+****ApplicationContext 接口的超级父接口 BeanFactory 就是Bean工厂，可以生产Bean对象的一个工厂对象
+    BeanFactory是IoC容器的顶级接口，也就是Spring的IoC容器底层上使用工厂模式
+    底层就是XML解析 + 工厂模式 + 反射机制
+
+    加载配置文件，获取applicationContext对象的时候，bean对象就创建了。而不是调用getBean方法的时候创建
+
+********************************************************************
+Spring6 启用Log4j2日志框架
+    引入Log4j2的依赖
+    配置log4j2.xml配置文件
+    <Appenders>
+        <!--控制日志输出的格式-->
+        <Console name="Console" target="SYSTEM_OUT">
+            <!--控制日志输出的格式-->
+            <PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n" />
+        </Console>
+    </Appenders>
+
+    <Loggers>
+        <!--level指定日志级别
+                ALL < TRACE < DEBUG < INFO < WARN < ERROR < FATAL < OFF
+            -->
+        <Root level="DEBUG">
+            <AppenderRef ref="Console" />
+        </Root>
+    </Loggers>
+
+**********************************************************************
+Spring对IoC的实现****核心 基础
+    IoC控制反转思想
+    控制反转是为了降低程序耦合度，提高程序扩展力，达到OCP原则，达到DIP原则
+    反转的是：
+        对象创建的权力，对象和对象之间关系的维护权
+    Spring容器对控制反转思想的实现：
+        依赖注入 DI Dependency Injection
+    
+依赖注入DI
+    Spring框架通过依赖注入的方式来完成Bean管理(Bean对象的创建，属性的赋值，对象之间关系的维护)
+    依赖指的是对象和对象之间的关联关系
+    注入值得是数据传递行为，通过注入行为来让对象和对象产生关系
+        常见实现方式有两种
+        set注入：底层会通过反射机制调用属性的set方法给属性赋值，这种方式要求属性必须对外提供set方法
+            配置property标签 name ref
+            对象实例化已经完成了，才能调用set方法
+        构造注入:底层会通过反射机制调用属性的构造方法给属性赋值，这种方式要求必须对外提供包含对应参数的构造方法
+            构造方法在对象实例化时就完成了赋值
+
+spring中的工具类 BeanUtils
+    方法 isSimpleValueType 可以用来判断是否是简单类型
+    (接口中的方法 有返回值类型，可以没有方法体，也可以写方法体（编写返回值，还可以写内部类）)
+
+Set注入专题（使用多于构造注入）
+    上述操作为注入外部Bean
+        bean定义到外面，在property标签中使用ref属性进行注入，最常用
+
+    注入内部Bean：
+        在bean标签中的property标签中 嵌套bean标签 是内部bean（id省略 使用较少）
+
+    注入简单类型
+        也就是给简单类型的属性进行赋值，在property标签中，指定name与value
+    ****Spring框架下的简单类型有：
+        八种基本数据类型及其包装类byte short int long float double boolean char
+        Enum枚举
+        CharSequence (String类型实现了CharSequence 还有各种buffer和builder)
+        Number (Integer这种都继承了Number)
+        Date 日期java.util.date 注意类型转换 ConversionNotSupportedException
+            直接写入value属性需要注意格式
+            <property name="" value="Tue Jun 20 19:19:51 CST 2023"/>
+            故此实际开发中，为使得格式简单易懂，通常不将Date视作简单类型，采用ref赋值
+        Temporal 时间时区java8提供的
+        URI
+        URL
+        Locale 语言
+        Class 类
+    ****简单类型实际应用案例
+        数据源DataSource
+            获取数据库连接对象 driver url username password 可以使用spring注入来赋值
+            可以写入配置文件
+
+    级联属性赋值（了解）cascade
+        需要提供对应的 get 方法，可以类比myBatis中级联查询
+        clazz.name
+        studentBean中使用ref关联clazzBean，不在clazzBean中给name属性赋值，
+            而是在studentBean中直接用clazz.name赋值(配置的顺序不可以颠倒)。(不建议使用)
+
+    注入数组
+        数组元素是简单类型
+            private String[] aiHaos;
+
+            <property name="aiHaos">
+                <array>
+                    <value>抽烟</value>
+                    <value>喝酒</value>
+                    <value>烫头</value>
+                    ...
+                </array>
+            </property>
+
+        数组元素不是简单类型
+            private User[] users;
+
+            <property name="users">
+                <array>
+                    <ref bean="u1"/>
+                    <ref bean="u2"/>
+                    <ref bean="u3"/>
+                    ...
+                </array>
+            </property>
+        几个user的bean的id： u1 u2 u3
+
+    注入List集合（有序可重复）
+        private List<String> names;
+
+        <property name="aiHaos">
+            <list>
+                <value>张三</value>
+                <value>张三</value>
+                <value>张三</value>
+                <value>李四</value>
+                <value>王五</value>
+                ...
+            </list>
+        </property>
+
+    注入Set集合（无序不可重复）（重复的会被覆盖）
+        private Set<String> cars;
+
+        <property name="aiHaos">
+            <set>
+                <value>奔驰</value>
+                <value>宝马</value>
+                <value>奥迪</value>
+                ...
+            </set>
+        </property>
+
+    注入Map集合
+        private Map<String,User> userMap;
+
+        <property name="userMap">
+            <map>
+                <entry key="1" value="张三"/>
+                <entry key="2" value="李四"/>
+                <entry key="3" value="王五"/>
+                ...
+                非简单类型：<entry key-ref="" value-ref=""/>
+            </map>
+        </property>
+
+    注入Properties属性类 （Properties实现了HashTable , HashTable继承了Map接口）
+        特性 key和value都必须是字符串类型
+        private Properties properties;
+
+        <property name="properties">
+            <props>
+                <prop key="driver">com.mysql.cj.jdbc.Driver</prop>
+                <prop key="url">jdbc://localhost:3306/mytestbase</prop>
+                <prop key="user">root</prop>
+                <prop key="password">Lbw151290007</prop>
+                ...
+            </props>
+        </property>
+
+    注入null和空字符串
+        注入null 就是不写property标签给属性赋值，默认下spring会注入null
+        或者使用null标签 手动注入null
+        <property name="name">
+            <null/>
+        </property>
+
+        注入空字符串
+        <property name="cat" value=""/>
+        或者使用value标签手动注入
+        <property name="cat">
+            <value/>
+        </property>
+
+    注入的值中包含特殊的字符
+        XML中有五个特殊字符：< > ' " &
+        以上的五种特殊符号会被当作XML语法的一部分进行解析，不可以直接出现在注入的字符串中
+        解决方法：
+            一：使用<![CDATA[]]> 格式固定 只能使用value标签：
+                原理：放入 <![CDATA[]]> 中的不会被XML解析器解析，属于xml的语法
+                <property name="result">
+                    <value>
+                        <![CDATA[2 > 3]]>
+                    </value>
+                </property>
+            二：使用实体符号代替特殊符号
+                >       &gt;
+                <       &lt;
+                '       &apos;
+                "       &quot;
+                &       &amp;
+
+******************************************************************************
+p命名空间注入
+    可以简化配置，条件如下：
+        在XML文件头部信息中添加p命名空间的配置信息 xmlns:p="http://www.springframework.org/schema/p"
+        p命名空间中注入底层是基于setter方法的，所以需要对应的属性提供setter方法
+        <bean id="" class="" p:name="" p:age="" p:birth-ref=""></bean>
+
+c命名空间注入
+    简化配置，对应的使用的是构造方法注入，条件：
+        在XML文件头部信息中添加c命名空间的配置信息 xmlns:c="http://www.springframework.org/schema/c"
+        提供对应构造方法，角标与参数名都可
+        <bean id="" class="" c:_0-ref="" c:_1="" c:_2=""></bean>
+
+util命名空间注入
+    例如：项目需要支持多个厂家的数据源，数据库连接池
+    数据库链接的基础信息，driver url username password 可能会出现多次
+        在XML文件头部信息中添加util命名空间的配置，与schema约束
+        xmlns:util=""http://www.springframework.org/schema/util"
+        xsi:schemaLocation="http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd"
+        主要是针对集合的，类似mybatis中的sql片段
+        <util:properties id="prop">
+            <prop key="driver">com.mysql.cj.jdbc.Driver</prop>
+            <prop key="url">jdbc://localhost:3306/mytestbase</prop>
+            <prop key="user">root</prop>
+            <prop key="password">Lbw151290007</prop>
+        </util:properties>
+        配置复用：
+        <property name="" ref="prop">
+
+******************************************************************************************
+基于XML的自动装配
+    Spring还可以完成自动化注入，自动化注入又被称为自动装配
+    可以根据名称自动装配，也可以根据类型自动装配
+    自动装配也是基于set方法实现的
+    autowire="byName"
+    被注入的bean的id必须是set方法的方法名去掉set首字母小写
+
+    根据类型装配byType
+    也是基于set方法实现的
+    缺陷是某个类型的bean只能有一个
+
+**********************************************************************
+spring引入外部属性配置文件
+    例如保存了客户的数据库连接信息的配置文件等 properties文件 key=value 形式
+    首先需要引入context命名空间与schema约束
+    xmlns:context="http://www.springframework.org/schema/context"
+    http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+    然后引入配置文件 location属性来指定，默认从类的根据路径下加载
+    <context:property-placeholder location="jdbc.properties"/>
+    然后使用 ${key}
+    <property name="driver" value="${driver}"/>
+
+    注意：在spring中 ${username} 解析的时候，会优先解析当前系统的管理员
+    解决方法： 添加前缀 jdbc.username
+
+*******************************************************************************
+Bean的作用域
+    bean对象的实例化默认是在解析xml文件的时候(创建spring上下文)，进行实例化（调用无参构造方法）。而不是getBean的时候
+    默认情况下，bean对象是单例（singleton）的，多次调用同一个getBean返回的对象引用是相同的，均返回这个单例的对象
+    设置单例或多例：
+        在bean标签中添加属性: scope="singleton" / "prototype" (原型)
+    设置为prototype的情况下，spring上下文创建时，bean对象的构造方法并不会执行，而是getBean的时候执行
+
+    其他的scope设置：
+        request 请求域 一次请求一个bean （MVC中）
+        session 会话域 一次会话一个bean （MVC中）
+        global session 专用与portlet应用 （portlet是一种规范，类比于servlet 运行于portlet容器中）
+        application 应用域 一个应用一个bean （分布式服务器中与单例有明显区别）
+        websocket 一个websocket声明周期一个bean （服务器向客户端推送内容）
+        自定义scope 很少用
+            举例：自定义一个线程级别的scope
+            首先实现Scope接口(这里直接使用spring内置的)
+                spring内置了线程范围的类 org.springframework.context.support.SimpleThreadScope
+            然后将自定义的Scope注册到Spring容器中
+            <bean class="org.springframework.beans.factory.config.CustomScopeConfigurer">
+                <property name="scopes">
+                    <map>
+                        <entry key="myThread">
+                            <bean class="org.springframework.context.support.SimpleThreadScope"/>
+                        </entry>
+                    </map>
+                </property>
+            </bean>
+
+************************************重点-详见JavaGoF****************************************
+GoF设计模式概述
+设计模式：一种可以被重复利用的解决方案
+    Gang of Four 四人组，即《设计模式》1995年一书四位作者的简称
+    除了GoF23种设计模式之外，还有其他的设计模式，例如JavaEE的设计模式，DAO模式，MVC模式等
+    GoF23种设计模式可分为三大类
+        创建型：解决对象创建问题
+            单例模式    bean    servlet伪单例
+            工厂方法模式
+            抽象工厂模式
+            建造者模式
+            原型模式
+        结构型：一些类或对象组合在一起的经典结构
+            代理模式   ajax 动态代理，反向代理
+            装饰模式    IO流
+            适配器模式 servlet中adapter
+            组合模式
+            享元模式
+            外观模式
+            桥接模式
+        行为型：解决类或对象之间的交互问题
+            策略模式    解决大量if else
+            模板方法模式 servlet中的过滤器
+            责任链模式   servlet中的过滤器
+            观察者模式   MVC模式符合 监听器
+            迭代子模式   集合中的迭代器iterator
+            命令模式
+            备忘录模式
+            状态模式
+            访问者模式
+            中介者模式
+            解释器模式
+
+****************************************************
+工厂模式
+    简单工厂 Simple Factory 不属于23种设计模式，又被称作静态工厂方法模式，简单工厂是工厂方法的一种特殊实现
+    工厂方法 Factory Method
+    抽象工厂 Abstract Factory
+
+简单工厂模式
+    包括三个角色：
+        抽象产品 角色
+        具体产品 角色
+        工厂类 角色
+        简单工厂模式中有一个静态方法，所以被称为，静态工厂方法模式
+    解决的问题：(优点)
+        对于客户端来说，不需要知道武器具体的生产过程
+        只需要向工厂索要即可
+        也就是说简单工厂模式达到了职责分离，
+        客户端只负责消费，工厂类只负责生产，生产和消费分离
+    缺点：
+        一：加入现在需要扩展一个新的产品，那么WeaponFactory工厂类的代码是需要修改的，显然违背了OCP原则
+        二：工厂类的责任比较重大，不能出现任何问题，因为这个工厂类负责所有产品的生产，称为全能类或者上帝类
+            工厂类一但出现问题，整个系统必然全部瘫痪，
+
+*******************************************************************************************
+简单工厂模式和工厂方法模式的本质区别是Factory类中是静态方法（所有产品一个工厂）还是实例方法（每一个产品都有一个工厂）
+
+工厂方法模式
+    工厂方法模式既保留了简单工厂模式的优点，同时又解决了简单工厂模式的缺点
+    工厂方法模式的角色包括：
+        抽象工厂角色
+        具体工厂角色
+        抽象产品角色
+        具体产品角色
+    工厂方法模式可以解决简单工厂模式中的OCP问题
+        解决方案：一个工厂对应生产一种产品，这样工厂就不是全能类了，也可也符合OCP原则
+    优点：如果要扩展一个产品，则只需要添加对应的 具体产品角色 与 具体工厂角色 无需修改之前的代码。符合OCP原则
+    优点：一个调用者想创建一个对象，只要知道其名称就可以了。
+    优点：屏蔽产品的具体实现，调用者只关心产品的接口。
+    缺点：还是new了具体的工厂。解决思路：可以写一个大的工厂，用来生产具体的工厂，采用静态工厂方法模式（但又带来了静态工厂方法模式的缺点）
+    缺点：每次增加一个产品时，都需要增加一个具体类和对象实现工厂，使得系统中类的个数成倍增加（类爆炸）
+        会增加系统的复杂度，增加了系统具体类的依赖，
+
+抽象工厂模式
+    抽象工厂模式相对于工厂方法模式来说，就是工厂方法模式是针对一个产品系列的，而抽象工厂模式是针对多个产品系列的，
+        即工厂方法模式是一个产品系列一个工厂类，而抽象工厂模式是多个产品系列一个工厂类。
+        抽象工厂模式特点：抽象工厂模式是所有形态的工厂模式中最为抽象和最具一般性的一种形态。抽象工厂模式是指当有多个抽象角色时，
+        使用的一种工厂模式。抽象工厂模式可以向客户端提供一个接口，使客户端在不必指定产品的具体的情况下，创建多个产品族中的产品对象。
+        它有多个抽象产品类，每个抽象产品类可以派生出多个具体产品类，一个抽象工厂类，可以派生出多个具体工厂类，
+        每个具体工厂类可以创建多个具体产品类的实例。每一个模式都是针对一定问题的解决方案，
+    ****工厂方法模式针对的是一个产品等级结构；而抽象工厂模式针对的是多个产品等级结果。
+    抽象工厂中包含4个角色：
+        抽象工厂角色
+        具体工厂角色
+        抽象产品角色
+        具体产品角色
+    优点：当一个产品族中的多个对象被设计成一起工作时，它能保证客户端始终只使用同一个产品族中的对象。
+    缺点：产品族扩展非常困难，要增加一个系列的某一产品，既要在AbstractFactory里加代码，又要在具体的里面加代码。
+
+********************************************************************************
+Bean的实例化(获取)方式
+    Spring为Bean提供了多种实例化方式，通常包括四种方式
+    通过构造方法实例化
+    通过简单工厂模式实例化
+    通过factory-bean实例化
+    通过FactoryBean接口实例化
+
+构造方法实例化
+    默认情况下，Spring会调用Bean的无参构造方法来完成bean的实例化
+        id属性是对象的唯一标识，
+        class属性是来指定要创建的java对象的类名，必须是带包名的全限定类名
+
+简单工厂模式实例化
+    <bean id="star" class="com.leowork.spring6.bean.StarFactory" factory-method="get"/>
+    向Spring提供对应的工厂类以及哪一个方法来获取对应的bean
+    spring调用简单工厂的get的静态方法时，工厂对象不会实例化，其构造方法不会执行
+
+通过factory-bean属性实例化
+    spring提供的实例化方式：通过工厂方法模式
+    通过factory-bean属性 和 factory-method 属性来共同完成管理管理
+    需要提供给Spring框架，需要调用哪个对象factory-bean的哪个方法factory-method来完成bean的创建（获取）
+    其中factory-bean与factory-method都是程序员自定义的
+
+通过FactoryBean接口实例化
+    在Spring框架中，可以编写类来直接实现FactoryBean接口，那么factory-bean与factory-method属性就无需指定
+    框架会让factory-bean自动指向实现FactoryBean接口的类，factory-method自动指向getObject()方法
+    implements FactoryBean
+    然后实现其中方法
+        接口中有默认default方法 is singleton 默认返回true 表示默认情况获取的bean是单例的，想要多例（原型），需要重写此方法返回false
+
+通过factory-bean实例化与通过FactoryBean接口实例化是工厂方法模式，工厂方法模式取得bean的过程中会有对应的(具体)工厂实例创建，
+而这个工厂实例可以注入其他属性，加工这个普通Bean，达到扩展功能的效果
+
+构造方法，简单工厂和工厂方法在实际中均有使用。(实际上注解开发 @Autowired更普遍)
+***********************************************************************************************
+在Java中，接口中的方法可以使用以下修饰符：
+
+    public：表示该方法可以被任何类访问。
+    private：表示该方法只能在接口内部访问，不能被实现接口的类调用。
+    abstract：表示该方法没有实现体，需要在实现接口的类中进行实现。
+    static：表示该方法属于接口的静态方法，可以直接通过接口名调用，不需要实例化对象。
+
+    default：表示该方法有默认的实现，可以在接口中直接提供方法的实现。
+
+    strictfp：表示该方法使用严格的浮点计算规则。
+
+    synchronized：表示该方法在多线程环境下是同步的，只能被一个线程执行。
+
+    final：表示该方法不能被子类重写。
+
+    native：表示该方法使用非Java语言实现，通常与native关键字一起使用。
+
+    需要注意的是，接口中的方法默认修饰符是public abstract，即使不显式地写出来。
+
+***********************************************************************************************
+BeanFactory 和 FactoryBean 的区别
+    BeanFactory是Bean工厂
+    ApplicationContest （整个SpringIoC容器）的顶级接口 BeanFactory
+    在解析xml文件的时候，也可以直接使用顶级接口（多态）接收对象
+
+    FactoryBean是工厂Bean，一种特殊的Bean
+    实现了FactoryBean接口，用来在工厂方法模式下，辅助Spring实例化，并加工普通的Bean对象
+
+********************************************************************************************
+注入自定义日期Date
+    首先向工厂Bean 构造注入 所需要的日期
+    工厂Bean的 getObject方法中 编写加工日期 字符串 格式转化的代码
+    然后向studentBean中注入
+    达到工厂Bean辅助普通Bean生产的作用
+
+******************************************重点*************************************************
+Bean的生命周期
+    生命周期的本质就是在哪个时间节点上调用了哪个类的哪个方法
+    需要了解生命线上的特殊的时间点，
+    确定代码的编写，需要在某个特殊的时间点上执行一段特定的代码，这段代码就可以放到这个节点上
+    生命线走到这里的时候，自然就会被调用
+    源码：AbstractAutowireCapableBeanFactory doCreatBean()
+
+    五步--七步--十步
+
+    Bean后处理器 实现BeanPostProcessor 重写before和after方法
+    七步增加的两步 在初始化Bean的前和后
+
+    跟踪源码细化为10步
+    两步增加在Bean后处理器before前后，还有在销毁Bean之前。都是检查这个Bean是否实现了某个特定的接口，实现了则容器会调用接口中的方法
+
+    实例化Bean-----无参构造--加载xml文件时---曝光
+    Bean属性赋值/注入-----set方法
+            检查Bean是否是实现了Aware的相关接口，并设置相关依赖，实现则调用接口中方法----接口方法
+        Bean后处理器的before----Bean后处理器方法（整个xml）
+            检查Bean是否是实现了InitializingBean接口，并调用接口方法----接口方法
+    初始化Bean----自定义initBean方法
+        Bean后处理器的after----Bean后处理器方法（整个xml）----均在加载xml文件时就已经执行，在getBean之前
+    使用Bean----使用---getBean方法（从缓存中）获取之后可以使用
+            检查Bean是否是实现了DisposableBean接口，并调用接口方法----接口方法----销毁bean之前
+    销毁Bean----自定义destroy方法---关闭spring容器时
+
+输出：
+    无参构造方法执行，实例化Bean
+    给Bean对象的属性赋值
+            这个Bean的名字是user
+            Bean这个类的类加载器是jdk.internal.loader.ClassLoaders$AppClassLoader@63947c6b
+            生产这个Bean的工厂对象是org.springframework.beans.factory.support.DefaultListableBeanFactory@d706f19: defining beans [com.leowork.spring6.bean.LoggerBeanPostProfessor#0,user]; root of factory hierarchy
+        Bean后处理器的before方法执行
+            InitializingBean 的 afterPropertiesSet 方法执行
+    初始化Bean
+        Bean后处理器的after方法执行
+    使用BeanUser{name='张三'}
+            DisposableBean 的 destroy 方法执行
+    销毁Bean
+
+*********************************************************************************
+Spring中Bean的作用域不同，管理方式不同
+    Spring容器只对单例的Bean singleton 进行完整的生命周期管理
+    对于prototype 多例 作用域的Bean，Spring容器只负责将Bean初始化完毕，等客户端程序获取到Bean之后，Spring容器就不再管理该对象的生命周期了
+    也就是管理到 加载xml文件 到 getBean方法 使用Bean之后遍不再管理 （后两步不再管理）
+
+*********************************************************************************
+自己new的对象纳入Spring容器管理
+    首先获取factory对象
+    然后调用registerSingleton方法 传入bean的名字与要加入的对象
+    Student stu = new Student();
+
+    DefaultListableBeanFactory factory = new DefaultListBeanFactory();
+    factory.registerSingleton("studentBean",stu);
+
+    使用singleton 管理 纳入管理前后对象的内存地址相同
+
+********************************************************************************
+Bean的循环依赖问题
+    A对象中有B属性，B对象中有A属性
+    多种情况：
+    ****singleton和set注入模式下 spring循环依赖管理没有任何问题
+        singleton表示在整个Spring容器中是单例的。独一无二的对象
+        主要的原因是这种模式下，spring对Bean的管理分为清晰的两个阶段：
+            一：在spring容器加载的时候，实例化Bean，只要其中任意一个Bean实例化之后，马上进行曝光，不等属性赋值就曝光
+            二：Bean曝光之后，在进行属性的赋值（调用set方法）
+        核心解决方案：实例化对象和对象的属性赋值分为两个阶段
+        只有在singleton模式下，spring才会采取提前曝光Bean 因为这个Bean是唯一的
+
+    ****多例 prototype 和set注入情况下
+        出现异常：BeanCurrentlyInCreationException 当前的Bean处于创建中异常----存在无法解析的循环引用
+            A的属性的赋值的过程中需要B，new了个B这个B也需要A，于是new了新的A 新的A有需要新的B 形成死循环
+        当两个bean的scope都是prototype的时候，才会出现上述异常，如果其中一个是singleton的，就不会出现异常
+
+    ****构造注入的情况
+        构造注入的Bean较为特殊，在创建Bean的同时，就会附上值
+        A创建的过程中，构造方法执行过程中，需要B，此时B还不存在，尚未实例化
+        报错：依旧是处于创建中异常：请求的Bean正在创建中，是否存在无法解析的循环引用
+        基于构造注入的方式下产生的循环依赖 是无法解决的
+
+Spring为什么可以解决set + singleton 模式下循环依赖------“曝光”
+
+    核心思路：实例化Bean 与 给Bean属性赋值 是分开完成的
+        实例化Bean是调用无参构造，此时属性并没有赋值，但是这个Bean已经曝光给外界，可以被调用和依赖
+        之后给Bean属性赋值是采用setter方法，两步分开，时间点也是分开的，可以保证不会冲突
+
+        比如所有的Bean都是单例的，可以先将所有的Bean实例化出来，放入集合(缓存)中。
+        当所有的单例Bean都实例化完成后，再注意调用setter方法给属性赋值，就解决了循环依赖
+
+    源码实现：
+********AbstractAutowireCapableBeanFactory
+            doCreatBean()
+                将单例对象缓存起来，无论是什么Bean对象，都先添加单例工厂
+                addSingletonFactory
+                    DefaultSingletonBeanRegistry 引入三级缓存
+        看源码得到 对象创建了，有了内存地址，但是属性都还是null
+        之后再给属性赋值
+
+三级缓存：都是map集合 key存储的都是bean的id 注意默认容量(final修饰，无法扩容)
+    一级缓存
+        存储的是完整的单例Bean对象，这里面的缓存的Bean对象都是属性赋值完成了的，是完整的
+    private final Map<String, Object> singletonObjects = new ConcurrentHashMap<>(256);
+
+    二级缓存
+        存储的是早期的单例Bean对象，这里面的Bean对象的属性没有赋值
+    private final Map<String, Object> earlySingletonObjects = new ConcurrentHashMap<>(16);
+
+    三级缓存
+        存储的是制造早期单例Bean对象的单例工厂对象，每一个单例Bean对象都对应一个单例的工厂Bean对象
+    private final Map<String, ObjectFactory<?>> singletonFactories = new HashMap<>(16);
+
+    先向三级缓存中放入工厂对象
+        this.singletonFactories.put(beanName,singletonFactory)
+        这步 put 实际上就是曝光了
+
+    获取Bean对象的过程
+        先从一级缓存中找，找不到向二级缓存中找，再找不到就去三级缓存中找到对应的工厂对象
+        工厂对象getObject拿到Bean对象
+        然后将这个Bean对象放入二级缓存，并将三级缓存中的该工厂对象移除
+
+****当Spring容器中存在循环依赖的bean，并且超出了三级缓存的容量，可以考虑以下解决方法：
+        使用 @Lazy 注解延迟加载：通过将循环依赖的bean中的一个或多个设置为延迟加载，
+        可以避免在创建bean时立即解决循环依赖。这样可以将循环依赖的bean放入到第三级缓存中，然后在后续需要使用时再进行解决。
+
+        使用 @DependsOn 注解指定 依赖顺序 ：通过使用@DependsOn注解，可以显式地指定bean的依赖顺序。
+        这样可以确保在创建bean时，先创建依赖的bean，从而避免循环依赖的问题。
+
+        使用ObjectFactory或ObjectProvider进行延迟注入：通过将循环依赖的bean中的一个或多个依赖对象的注入方式改为使用
+        ObjectFactory或ObjectProvider进行延迟注入，可以避免在创建bean时立即解决循环依赖。这样可以将循环依赖的bean放入到第三级缓存中，
+        然后在后续需要使用时再进行解决。
+
+        调整bean的依赖关系，尽量减少循环依赖的关系，重新设计bean之间的关系或者引入新的中间bean来解耦循环依赖
+
+        主要思路：优化代码的设计和架构，调整bean依赖关系，减少循环依赖
+        额外思路：延迟加载，指定依赖注入顺序，延迟注入，中间bean解耦
+
+****Spring容器三级缓存的扩容
+        修改默认缓存容量，可以通过修改Spring的配置文件或者编程方式，设置缓存的默认容量
+
+        自定义缓存实现：可以自定义一个缓存实现类，替换Spring默认的缓存实现。在自定义的缓存实现中，可以根据需要进行容量的扩容，以满足实际需求。
+
+        使用其他缓存框架：Spring提供了与其他缓存框架（如Ehcache、Redis等）的集成支持。可以使用这些缓存框架来替代Spring的默认缓存实现，
+        这样可以利用这些缓存框架的强大功能和灵活性，同时也可以根据需要进行缓存容量的扩容。
+
+*********************************************************************************************
+手写Spring容器IoC模块
+    回顾反射机制：
+        方法的四要素：修饰符列表，返回值，方法名，形参列表
+        调用一个方法的四要素：调用哪个对象 调用哪个方法 传入什么参数 返回什么值
+
+        使用反射机制调用方法，就是凑齐上面四个要素，使用反射机制获取
+    步骤：
+        获取类：  Class.forName("全限定类名")
+--------Class<?> clazz = Class.forName("com.leowork.spring6.bean.reflect.SomeService");
+        获取方法：getDeclaredMethod("方法名","形参列表-可变长参数")
+--------Method doSomeMethod = clazz.getDeclaredMethod("doSome",String.class,int.class);
+        获取对象：getDeclaredConstructor("形参列表-可变长参数");
+--------Method constructor = getDeclaredConstructor("形参列表-可变长参数");
+--------Object obj = constructor.newInstance("形参列表-可变长参数");
+        调用方法 invoke("对象"，"参数列表")
+--------Object returnValue = doSomeMethod.invoke(obj,"李四"，250);
+
+*********************************************************************************************
+普通JavaBean规范
+    属性私有化，对外提供setter和getter，重写toString HashCode equals
+
+SpringDI核心实现
+    已知类名，属性名，属性类型。通过反射机制调用set方法给对象的属性赋值 反射机制代码实现
+    《规范的意义》
+    上述已知是从dom4j解析xml文件的来
+代码实现
+    //由配置文件解析而来的类名与属性名
+    String className = "com.leowork.reflect.user";
+    String propertyName = "age";
+    //依据类名获取类
+    Class<?> clazz = Class.forName(className);
+    //根据方法名拼接set方法方法名
+    String setMethodName = "set" + propertyName.toUpperCase().charAt(0) + propertyName.substring(1);
+    //根据属性名获取属性
+    Field field = clazz.getDeclaredField(propertyName);
+    //根据set方法名与属性的属性类型获取set方法
+    Method setMethod = clazz.getDeclaredMethod(setMethodName,field.getType());
+    //new这个类的对象
+    Object obj = clazz.newInstance();
+    //调用set方法给属性赋值
+    setMethod.invoke(obj,30);
+    //将结果输出到控制台
+    System.out.println(obj);
+
+*************************************************************************************
+Java中的访问权限控制修饰符有以下四种：
+
+    public：公共访问权限，可以被任何类访问。
+
+    protected：受保护访问权限，可以被同一个包内的其他类访问，以及继承该类的子类访问。(该子类可以跨越包)
+
+    默认（不加修饰符）：默认访问权限，只能在同一个包内的其他类访问，不能在不同包的类中访问。(同包)
+
+    private：私有访问权限，只能在定义该属性或方法的类内部访问。(想访问必须对外提供公开的set和get方法)
+****************************************************************************************
+switch语句的lambda写法，合并条件等
+
+Object realValue = switch (propertyTypeSimpleName) {
+    case "byte" -> Byte.parseByte(value);
+    case "short" -> Short.parseShort(value);
+    case "int" -> Integer.parseInt(value);
+    case "long" -> Long.parseLong(value);
+    case "float" -> Float.parseFloat(value);
+    case "double" -> Double.parseDouble(value);
+    case "boolean" -> Boolean.parseBoolean(value);
+    case "char", "Character" -> value.charAt(0);
+    case "Byte" -> Byte.valueOf(value);
+    case "Short" -> Short.valueOf(value);
+    case "Integer" -> Integer.valueOf(value);
+    case "Long" -> Long.valueOf(value);
+    case "Float" -> Float.valueOf(value);
+    case "Double" -> Double.valueOf(value);
+    case "Boolean" -> Boolean.valueOf(value);
+    default -> value;
+};
+
+*************************************************************************************
+Spring IoC 注解式开发
+    可以简化配置文件的编写
+    Spring6倡导全注解式开发
+
+    使用某个注解的时候，如果属性名是 value 则value可以省略
+    使用某个注解的时候，如果属性名是数组，并且数组中只有一个元素，那么 {} 大括号可以省略
+
+回顾自定义注解：
+    @Target(value = {ElementType.TYPE, ElementType.FIELD})//元注解 @Target用来修饰 可以出现的位置(类，属性)
+    @Retention(RetentionPolicy.RUNTIME)//保持性策略 RUNTIME表示被修饰的注解最终会保存在Class文件中，并且可以被反射机制读取
+                                       //SOURCE  表示注解只保留在Java源文件中，编译后就不存在了，不会进入Class文件
+                                       //CLASS  表示注解可以被编译到Class文件中，但是无法被反射机制读取到
+    public @Interface Component{
+
+        //定义注解的属性类型与属性名
+        String value();
+
+        String name();
+
+        String[] names();
+
+    }
+
+反射机制读取注解
+    if(aClass.isAnnotationPresent(Component.class)){
+
+        //获取该类上的注解
+        Component annotation = aClass.getAnnotation(Component.class);
+        //访问注解的属性
+        System.out.println(annotation.value());
+
+    }
+
+组件扫描原理
+    举例：目前只知道包名，需要扫描该包下所有的类，如果这个类上有@Component注解修饰，就实例化该类的对象，并放入map集合缓存中
+
+public class ComponentScan{
+    public static void main(String[] args) throws Exception{
+        Map<String, Object> beanMap = new HashMap<>(16);
+        String packageName = "com.leowork.spring6.bean";
+        //编写扫描程序核心业务逻辑
+        //首先将包名转换成路径
+        //正则regex中 . 代表任意字符。需要使用 \. 在正则中才表示普通的 . 字符
+        String packagePath = packageName.replaceAll("\\.", "/");
+        //使用类路径获取（编译后的class字节码文件）绝对路径
+        URL url = ClassLoader.getSystemClassLoader().getResource(packagePath);
+        String path = url.getPath();
+        //获取该绝对路径下的所有文件，使用file类
+        File file = new File(path);
+        File[] files = file.listFiles();
+        //遍历files
+        Arrays.stream(files).forEach(f -> {
+            //可以通过f.getName()获取文件名
+            //可以通过f.getName().split("\\.")[0]获取简类名（去掉.class后缀）
+            //拼接全类名
+            String className = packageName + "." + f.getName().split("\\.")[0];
+            //反射机制获取类，获取类上注解
+            Class<?> aClass = Class.forName(className);
+            //判断是否有注解
+            if(aClass.isAnnotationPresent(Component.class)){
+                //获取该类上的注解
+                Component annotation = aClass.getAnnotation(Component.class);
+                //访问注解的属性，是bean的id
+                String id = annotation.value();
+                //有注解的需要创建对象
+                Object obj = aClass.newInstance();
+                //将对象放入缓存
+                beanMap.put(id,obj);
+            }
+        })
+        System.out.println(beanMap);
+    }
+}
+
+***********************************************************************************
+Spring IoC 注解式开发
+Bean的声明，注解形式，取代Bean标签
+
+    均有默认值
+        String value() default "";
+    均有以下元注解
+        @Target({ElementType.TYPE})
+        @Retention(RetentionPolicy.RUNTIME)
+        @Document
+
+    @Component      组件      同时作为元注解修饰下面三种注解
+
+    @Controller     控制器     表示层
+    @Service        业务      业务层
+    @Repository     仓库/Dao  持久层
+    这三个注解均具有Component的别名，对应三层架构，增加苦读性
+        @AliasFor(
+            annotation = Component.class
+        )
+
+Spring注解的使用
+    加入aop依赖
+    添加context命名空间
+    在配置文件中指定扫描的包
+    在Bean的类上使用注解
+
+    如果不在注解中给value赋值bean的id。Spring会默认赋值，是类名首字母变小写（有时会出错）
+
+    如果有多个包的情况：
+        指定包路径时，多个包的路径使用 , 逗号隔开
+        或者指定多个包共同的父包，扫描范围变大，牺牲性能
+
+依据注解不同，选择性实例化Bean
+    解决方法：
+    filter过滤，白名单黑名单
+    <!--use-default-filters="false" 表示让所有 四种 注解式声明Bean都失效-->
+    <context:component-scan base-package="com.leowork.spring6.bean" use-default-filters="false">
+        <!--表示单独包含@Repository注解，只这一种生效-->
+        <context:include-filter type="annotation" expression="org.springframework.stereotype.Repository"/>
+    </context:component-scan>
+
+    <!--注解全部生效 默认就是true-->
+    <context:component-scan base-package="com.leowork.spring6.bean" use-default-filters="true">
+        <!--进行排除，表示@Contoller 注解失效-->
+        <context:exclude-filter type="annotation" expression="org.springframework.stereotype.Controller"/>
+    </context:component-scan>
+
+**********************************重点************************************************************************
+Spring注解式开发，负责注入的注解
+    @Value
+    @Autowired
+    @Qualifier
+    @Resource
+
+简单类型的注入可以使用 @Value 注解修饰属性(无需但是最好提供set方法)，或者对应的set方法上(set注入)，或者构造方法的形参上(构造注入)
+
+非简单类型的可以使用 @Autowired 完成注入，默认是根据类型装配 byType
+    想要根据名字进行装配 byName 需要与 @Qualifier 注解联合使用
+
+    具有 boolean required() default true;
+    @Autowired 注解是不需要写属性的，直接使用即可，作用是根据类型 byType 自动装配
+
+当Autowired要注入的有多个实现类的时候，byType会报错，需要使用byName形式注入
+    此时需要联合注解 @Qualifier 使用，根据名字进行注入
+
+    @Autowired
+    @Qualifier("orderDaoImplForOracleBean")     //指定要注入的bean的id
+
+@Autowired注解可以出现的位置
+    属性上(FIELD) set方法上(METHOD) 构造方法或构造方法的参数上
+    当构造方法只有一个（不可以写无参）且参数与属性对应的时候 Autowired注解可以省略（但不建议）
+
+@Resource注解也可以完成非简单类型的注入(官方建议使用)
+    @Resource注解是JDK扩展包中的，属于JDK的一部分，属于标准注解，更加具有通用性
+    @Autowired注解是Spring框架的
+    @Resource注解默认自动装配形式是 byName，未指定name时，使用属性名作为name。如果找不到则自动切换byType
+    @Autowired注解默认自动装配形式是 byType，如果想根据名称装配，需要配合@Qualifier一起使用
+    @Resource出现位置为：属性上，set方法上
+    @Autowired出现位置为：属性上，set方法上，构造方法上，构造方法参数上
+
+@Resource需要额外引入依赖
+    Spring6后，支持JakartaEE9 （Oracle把JavaEE贡献给Apache了，更名为JakartaEE 包名一律由javax编程jakarta）
+    jakarta.annotation-api
+
+    @Resource(name = "studentDaoImplForMySqlBean")    // name指定bean的id
+
+全注解式开发
+    @Configuration
+    @ComponentScan({"cn.leowork.spring6.dao","cn.leowork.spring6.service"})
+    public class Spring6Config {
+    }
+
+    使用：
+    AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(Spring6Config.class);
+    context.getBean()
+
+*********************************************************************************
+JdbcTemplate
+    是Spring内置的一个JDBC模板类，工具类，是对JDBC的封装，简化JDBC代码
+    也可也使用Spring继承其他的ORM框架，例如MyBatis，Hibernate
+    简单了解即可，
+引入依赖：
+    spring-context
+    spring-jdbc
+    mysql驱动
+    junit
+
+    通常ORM中 一张表对应一个Java类dao
+    字段对应属性
+
+代码示例：
+    配置文件
+    <bean id="jdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">
+        <property name="dataSource" ref="ds"/>
+    </bean>
+    可以配置第三方数据源（连接池）德鲁伊druid，C3P0，dbcp等，也可以自定义数据源，只要实现DataSource接口
+    数据源中完成JDBC注册等，获取链接等，并将数据库也纳入bean管理
+    <bean id="ds" class="">
+        <property name="driver" value=""/>
+        <property name="url" value=""/>
+        <property name="username" value=""/>
+        <property name="password" value=""/>
+    </bean>
+
+    使用 正常加载xml 然后getBean 获取jdbcTemplate对象
+增删改查：
+    //增
+    String sql = "insert into t_user(real_name,age) values(?,?)";
+    //DML都是update方法，需要传入语句以及对应的值，返回影响数据条数
+    int count = jdbcTemplate.update(sql,"张三"，20);
+    //改
+    String sql = "update t_user set real_name = ? ,age = ? where id = ?"
+    int count = jdbcTemplate.update(sql, "张三", 20, 1)；
+    //删
+    String sql = "delete from t_user where id = ?";
+    int count = jdbcTemplate.update(sql, 1);
+    //查一个 可以自动映射属性名与字段名
+    String sql = "select * from t_user where id = ?";
+    User user = jdbcTemplate.queryForObject(sql, new BeanPropertyRowMapper<>(User.class), 2);
+    //查多个
+    String sql = "select * from t_user";
+    List<User> users = jdbcTemplate.query(sql, new BeanPropertyRowMapper<>(User.class));
+    //查一个值，查询总记录条数
+    String sql = "select count(1) from t_user"
+    Integer total = jdbcTemplate.queryForObject(sql, int.class);
+    //批量添加，采用Object数组来包装多个存有数据的obj，然后存入List集合
+    String sql = "insert into t_user (id, real_name, age) value(?,?,?)";
+    Object[] obj1 = {null,"张三",20};
+    Object[] obj2 = {null,"李四",23};
+    Object[] obj3 = {null,"王五",25};
+    List<Object[]> list = new ArrayList<>();
+    list.add(obj1);
+    list.add(obj2);
+    list.add(obj3);
+    int[] counts = jdbcTemplate.batchUpdate(sql,list);
+    //批量修改
+    String sql = "update from t_user set real_name = ? ,age = ? where id = ?";
+    Object[] obj1 = {"张三",20,3};
+    Object[] obj2 = {"李四",23,4};
+    Object[] obj3 = {"王五",25,5};
+    List<Object[]> list = new ArrayList<>();
+    list.add(obj1);
+    list.add(obj2);
+    list.add(obj3);
+    int[] counts = jdbcTemplate.batchUpdate(sql,list);
+    //批量删除
+    String sql = "delete from t_user where id = ?";
+    Object[] obj1 = {3};
+    Object[] obj2 = {4};
+    Object[] obj3 = {5};
+    List<Object[]> list = new ArrayList<>();
+    list.add(obj1);
+    list.add(obj2);
+    list.add(obj3);
+    int[] counts = jdbcTemplate.batchUpdate(sql,list);
+    //回调函数，可以编写jdbc代码
+    String sql = "select id, real_name, age from t_user where id=?"
+        //注册回调函数，execute方法执行的时候，回调函数中的doInPreparedStatement()会被调用，可以在其中编写jdbc代码，匿名内部类new接口写法
+    User user = jdbcTemplate.execute(sql, new PreparedStatementCallback<User>(){
+        @Override
+        public User doInPreparedStatement(PreparedStatement ps) throws SQLException, DataAccessException{
+            User user = null;
+            ps.setInt(1,2);
+            ResultSet rs = ps.executeQuery();
+            if(rs.next()){
+                int id = rs.getInt("id");
+                String realName = rs.getString("real_name");
+                int age = rs.getInt("age");
+                user = new User(id, realName, age);
+            }
+            return user;
+        }
+    });
+    //使用第三方连接时，以德鲁伊为例，druid
+    引入依赖
+    com.alibaba
+    druid
+    类名：com.alibaba.druid.pool.DruidDataSource
+    注入时可以配置各项信息，基础的数据库连接信息，以及空闲数量，链接数量，等等
+
+
+**********************************************重点**代理模式*****************************************************
+代理模式（AoP的底层就是代理模式实现）
+
+    作用：当一个对象需要收到保护的时候，可以考虑使用代理机制来代替这个对象去完成某个行为
+        当一个对象需要功能增强的时候，可以考虑使用代理机制来完成增强
+        A对象无法和B对象直接交互时，可以使用代理模式来完成交互（AJAX异步请求）
+
+    角色：
+        目标对象
+        代理对象
+        目标对象和代理对象的公共接口
+
+    如果使用代理模式的话，对于客户端程序来说，客户端是无法察觉到的。
+    客户端在使用代理对象的时候就像在使用目标对象(面向接口编程)
+
+    实际业务有可能：统计业务耗时，业务功能资源占用，资源占比，优化业务代码替换旧代码，做功能增强等，不违背OCP
+    举例：
+        项目经历提出一个新的需求，要统计所有业务接口中每一个业务方法的耗时
+        解决方案一：
+            硬编码，在每一个业务接口中的每一个业务方法中直接添加统计耗时的程序
+            缺点：违背OCP原则，修改了原来的代码
+            缺点：统计耗时的代码编写了多次，代码没有得到复用
+        解决方案二：
+            编写业务类的子类，让子类继承业务类，对每个业务方法进行重写(原有方法变为 super.generate())
+            将统计耗时的代码增加到重写的方法中，保护了原有代码
+            优点：解决了OCP，保护了源代码
+            缺点：采用了继承关系，耦合度大大增加，
+            缺点：代码没有得到复用
+        解决方案三：静态代理模式
+            编写代理类，实现目标类相同的接口，并实现目标方法
+            将原目标对象作为代理类中的一个属性，采用关联关系。这种关系比继承关系耦合度要低
+            编写代理方法，增强功能，并调用原目标类中的目标方法
+            优点：符合OCP
+            优点：采用代理模式的关联关系，耦合度低于继承关系
+            缺点：静态代理每个接口都要写，产生类爆炸，不好维护。
+                引入动态代理，字节码生成技术（javassist），在内存中动态生成一个class字节码代理类文件，
+
+*******************************************************************************************
+在Java中，类和类之间的关系有以下几种种类：
+
+    继承(泛化)关系（Inheritance）：一个类可以继承另一个类的属性和方法，被继承的类称为父类或基类，继承的类称为子类或派生类。子类可以重写父类的方法，实现自己的特定行为。
+        Cat is a Animal
+    实现关系（Implementation）：一个类可以实现一个或多个接口，接口定义了一组方法的规范，实现接口的类需要实现接口中定义的所有方法。
+
+    关联关系（Association）：两个类之间存在关联关系，一个类可以拥有另一个类的对象作为自己的成员变量。关联关系可以是双向的，也可以是单向的。
+        张三 has a car
+    聚合关系（Aggregation）：一种特殊的关联关系，表示整体与部分的关系，整体对象可以包含部分对象，但部分对象可以独立存在。
+
+    组合关系（Composition）：一种更强的聚合关系，表示整体对象负责创建和销毁部分对象，部分对象不能独立存在。
+
+    依赖关系（Dependency）：一个类使用另一个类的对象作为方法的参数、返回值或局部变量，表示一种临时的关联关系。
+
+泛化关系的耦合度高于关联关系，优先选择使用关联关系
+这些关系描述了类与类之间的不同联系和依赖，帮助我们理解和设计Java程序的结构。
+
+********************************************************************************************
+动态代理
+    在程序运行阶段，在内存中动态生成代理类，被称为动态代理，目的是为了减少代理类的数量，增强代码复用性
+    常见代理技术：
+    JDK动态代理：只能代理接口（Spring的AoP底层采用的是JDK动态代理）
+    CGLIB动态代理技术:Code Generation Library,高性能高质量的Code生成类库，可以在运行期扩展Java类与实现Java接口
+        既可以代理类也可以代理接口，底层是通过继承的方式实现的（字节码处理框架ASM），性能强于JDK动态代理，
+    Javassist动态代理技术:开源，分析编辑和创建Java字节码的类库，已加入开源的JBoss服务器
+        通过使用Javassist对字节码操作为JBoss实现动态AOP框架
+
+JDK动态代理:
+
+    OrderService proxyObj = (OrderService)Proxy.newProxyInstance(target.getClass().getClassLoader(),
+                                                                 target.getClass().getInterfaces(),
+                                                                 new TimerInvocationHandler(target));
+
+
+    @Override
+    public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+        System.out.println("增强1");
+        Object retValue = method.invoke(target,args);
+        System.out.println("增强2");
+        return null;
+    }
+
+***************************************************************************
+Javassist动态代理
+    动态代理类代码：
+    // 创建一个ClassPool对象，用于加载被代理类和生成代理类
+    ClassPool classPool = ClassPool.getDefault();
+
+    // 获取一个CtClass对象，表示被代理类 get （HelloImpl实际存在）
+    CtClass targetClass = classPool.get("HelloImpl");
+
+    // 创建一个CtClass对象，表示代理类 makeClass（内存中生成）
+    CtClass proxyClass = classPool.makeClass("HelloProxy");
+
+    // 设置代理类的接口（Hello类实际存在），并添加到CtClass.addInterface
+    proxyClass.addInterface(classPool.get("Hello"));
+
+    // Java代码编写内存中字节码的类
+    // 添加一个字段，用于存储被代理对象，并添加到CtClass.addField
+    CtField targetField = new CtField(targetClass, "target", proxyClass);
+    proxyClass.addField(targetField);
+
+    // 添加一个构造方法，用于初始化被代理对象，并添加到CtClass.addConstructor
+    // 设置构造方法的参数是目标方法，方法体是this赋值
+    CtConstructor constructor = new CtConstructor(new CtClass[]{targetClass}, proxyClass);
+    constructor.setBody("{this.target = $1;}");
+    proxyClass.addConstructor(constructor);
+
+    // 实现接口中的方法，并添加到CtClass.addMethod
+    // 编辑返回值类型，方法名，参数列表以及这个方法属于哪个类对象去调用
+    // 此处编写加强方法，并调用原目标对象的方法，注意转义字符的使用
+    CtMethod method = new CtMethod(CtClass.voidType, "sayHello", new CtClass[]{}, proxyClass);
+    method.setBody("{System.out.println(\"Before sayHello\"); target.sayHello(); System.out.println(\"After sayHello\");}");
+    proxyClass.addMethod(method);
+
+    // 创建代理类的实例
+    // 反射机制，获取类，获取构造方法，构造方法初始化（参数是被代理对象）
+    Class<?> proxyClazz = proxyClass.toClass();
+    Hello proxy = (Hello) proxyClazz.getDeclaredConstructor(HelloImpl.class).newInstance(new HelloImpl());
+
+    // 调用代理类的方法
+    proxy.sayHello();
+
+**********************************************************************************************
+CGLIB动态代理
+    CGLIB既可以代理接口，又可以代理类，底层采用继承的方式实现，所以被代理的目标类不能使用final修饰
+    引入依赖
+    cglib
+
+    创建字节码增强器对象，是CGLIB的核心对下个，靠它生成代理类
+    Enhancer enhancer = new Enhancer();
+
+    告诉CGLIB父类（目标类）
+    enhancer.setSuperClass(User.class);
+
+    设置回调，等同于JDK动态代理中的调用处理器InvocationHandler
+    在CGLIB当中不再是 InvocationHandler 调用处理器接口，而是 MethodInterceptor 方法拦截器接口
+    enhancer.setCallback(new TimerMethodInterceptor(){
+        @Override
+        public Object intercept(Object target, Method method, Object[] objects, MethodProxy methodProxy) throws Throwable{
+
+            增强代码
+
+            调用目标对象（父对象）的目标方法，invokeSuper，传入目标对象于参数列表
+            Object retValue = methodProxy.invokeSuper(target, objects);
+
+            增强代码
+
+            return retValue;
+        }
+    });
+
+    创建代理对象，（在内存中生成UserService的子类，代理类的字节码，并创建代理对象）
+    UserService userServiceProxy = (USerService) enhancer.create();
+    调用代理对象的代理方法
+    boolean success = userServiceProxy.login("admin","123");
+    System.out.println(success ? "登陆成功" : "登陆失败")；
+
+    userServiceProxy.login();
+
+    报错解决办法
+    添加VMoptions
+    --add-opensjava.base/java.lang=ALL-UNNAMED
+    --add-opensjava.base/sun.net.util=ALL-UNNAMED
+
+    注意：
+    CGLIB生成的类（继承了目标类的子类）的命名特点
+    com.leowork.proxy.service.UserService$$EnhancerByCGLIB$$内存地址@内存地址
+    并且是在于目标类相同的包下生成
+
+*********************************************************************************
+面向切面编程AOP Aspect Oriented Programming
+    IoC使软件组件松耦合，AOP使程序员可以捕捉到系统中经常使用的功能，将其转化为组件
+    AOP是OOP的延申
+    AOP底层是采用动态代理实现的
+    Spring的AOP的动态代理是JDK动态代理 + CGLIB动态代理，代理接口默认使用JDK
+        如果代理类，这个类没有实现接口，就会切换使用CGLIB，也可以配置。
+
+AOP思想介绍
+    切面就是程序当中和业务逻辑无关的通用代码
+    （****交叉业务****）
+    例如：日志，事务管理，安全管理等
+    总结：将于核心业务无关的代码独立的抽取出来，形成一个独立的组件，然后以横向交叉的方式引用到业务历程当中的过程被称为AOP
+    优点：代码复用性增强
+        维护成本低
+        更专注核心业务的编写
+
+永远保持思路 AOP 留意交叉业务
+
+*******************************************************************************
+AOP的七大术语
+
+    连接点 Joinpoint
+        在程序的整个执行流程中，可以织入切面的**位置**，方法的执行前后，异常抛出之后等位置。
+        对应通知出现的位置
+    切点 Pointcut
+        程序执行流程中，真正织入切面的方法，一个切点对应多个连接点
+    通知 Advice
+        通知又叫增强，就是具体要织入的代码
+        包括：
+            前置通知（业务代码前），后置通知（业务代码后），环绕通知（前置+后置），异常通知（catch语句块），最终通知（finally语句块）
+    切面 Aspect
+        切点 + 通知
+    织入 Weaving
+        把通知应用到目标对象上的过程
+    代理对象 Proxy
+        代理模式，目标对象被织入通知后的对象
+    目标对象 Target
+        代理模式，被织入通知的对象
+
+切点表达式：用来定义通知Advice往哪些方法上切入
+    通过参数描述 可以匹配方法
+
+    语法： execution([访问控制权限修饰符] 返回值类型 [全限定类名] 方法名(形参列表) [异常])
+        访问控制权限修饰符
+            可选项，不写就是i四个权限都包括
+            写public就表示只包括公开的方法
+        返回值类型
+            必选项
+            * 表示返回值类型任意
+        全限定类名
+            可选项
+            ”..“ 两个点表示当前包，意义包下的所有类
+            省略则表示所有的类
+        方法名
+            必填
+            * 表示所有方法
+            set * 表示所有的set方法
+        形参列表
+            必填
+            () 括号不填，表示没有参数的方法
+            (..) 括号两个点，表示参数类型和个数随意的方法
+            (*) 表示只有一个参数的方法
+        异常
+            可选项
+            省略表示任意异常类型
+
+    举例：
+    匹配所有 execution(* *(..))
+
+**************************************************************************************************************
+Spring的 AOP
+    底层就是基于JDK动态代理和CGLIB动态代理实现的，Spring进行了二次包装
+    实际SpringAOP是难以看到动态代理的原代码的
+    实现方式：
+    方式一：Spring框架结合AspectJ框架实现的AOP，基于注解的方式--实际开发中最常用
+    方式二：Spring框架结合AspectJ框架实现的AOP，基于XML的方式--上述解决不了的复杂情况时
+    方式三：Spring框架自己实现的AOP，基于XML配置的方式
+
+    AspectJ框架是Eclipse的支持AOP的框架，是独立于Spring框架之外的一个框架，Spring框架使用了AspectJ（效率高，完善，优雅）
+
+    引入依赖：
+    spring-context
+    spring-aspects
+    在配置文件中添加context命名空间和aop命名空间（复制beans的，修改粘贴）
+
+    <!--组件扫描-->
+    <context:component-scan base-package="com.leowork.spring6.service"/>
+
+    注解 纳入Spring容器管理
+
+    <!--开启自动代理-->
+    <!--扫描@Aspect注解，有则生成代理-->
+    <!--proxy-target-class="true"  表示强制全部使用CGLIB动态代理-->
+    <!--模式为false，就是接口使用JDK动态代理，反之使用CGLIB动态代理-->
+    <aop:aspectj-autoproxy />
+
+    通知Advice 以方法的形式出现
+    用注解来控制通知于目标方法的关系，顺序，前，后，环绕，异常，最终
+    注解的value用来识别匹配方法，填写切点表达式
+    @Before("execution(* com.leowork.spring6.service.UserService.*(..))")
+
+    动态在程序运行阶段织入代理对象，增强代码
+
+****注意切点表达式的写法，匹配包，类，方法****
+
+切点（通知）之间的顺序：
+    前置通知 @Before    目标方法执行之前
+    后置通知 @AfterReturning    目标方法执行之后
+        可以获取目标方法执行之后的返回值，并进行加工增强，所以带有Returning
+    环绕通知 @Around    目标方法之前 + 之后(范围最大)
+        需要连接点参数 ProceedingJoinPoint joinPoint
+        joinPoint.proceed();
+        就是代理模式中，执行目标方法的
+            类比JDK动态代理InvocationHandler中的invoke方法的 method.invoke()
+            或CGLIB中MethodInterceptor的intercept方法的 methodProxy.invokeSuper()
+        特殊：环绕通知在执行目标方法后会改变目标方法返回值，要把proceed()的返回值继续向上返回
+    异常通知 @AfterThrowing     目标方法发成异常之后执行通知
+    最终通知 @After     放在finally语句块中的通知
+
+    执行顺序：
+        前环绕--前置通知--目标方法--后置通知--后环绕--最终通知
+                          |
+                       异常通知--最终通知
+
+多个切面之间的顺序：
+    在@Aspect注解下添加@Order()注解
+    value是数字，整数越小，优先级越高，但不会影响于目标方法之间的关系
+
+通用切点的定义：
+    @Pointcut("execution(* com.leowork.spring6.service.UserService.*(..))")
+    方法名，方法体随意，主要是注解起作用
+    类似配置文件中的全局property
+    其他通知上的注解就是
+    @AfterReturning("方法名()")
+    跨类使用需要带全限定类名
+
+连接点Joinpoint
+    Spring调用通知的时候，会传入连接点参数，各种通知都可以加
+    例如环绕通知中，ProceedingJoinPoint joinPoint
+                joinPoint.proceed();
+
+    通用：获取目标方法的签名（访问控制权限，返回值类型，方法名，形参列表） 方法的具体信息
+    Signature signature = joinPoint.getSignature();
+    getName()
+    getDeclaringType
+    getModifiers
+    getDeclaringTypeName()
+
+***************************************************************************
+全注解开发：(常用)
+    配置文件中的context和aop的注解写法
+
+    @Configuration
+    @ComponentScan({"com.leowork.spring6.service"})     //配置扫描
+    @EnableAspectJAutoProxy()       //依旧具有参数（value） proxyTargetClass = true 表示只是用CGLIB
+    public class Spring6Config{
+    }
+
+    使用：
+    ApplicationContext applicationContext = new AnnotationConfigApplicationContext(Spring6Config.class);
+
+***************************************************************************
+基于XML配置方式的AOP 了解
+    不使用注解，均在xml文件中进行配置
+
+    首先添加context和aop命名空间
+    然后将目标对象，切面，纳入spring IoC容器管理
+    然后配置aop
+    <aop:config>
+        <!--切点表达式-->
+        <aop:pointcut id="mypointcut" expression="" />
+        <!--切面=通知+切点-->
+        <aop:aspect ref="">
+            <aop:after-returning method="testAdvice" pointcut-ref="mypointcut"/>
+        </aop:aspect>
+    </aop:config>
+
+*****************************************************************************************
+AOP编程式事务解决方案
+    事务：在一个业务流程中，多条DML必须同时成功或者同时失败
+    开启，提交，回滚，
+
+    解决：将控制事务的代码，作为环绕通知，切入目标类的方法当中
+
+    @Around("execution()")
+    public void aroundAdvice(ProceedingJoinPoint joinPoint){
+        try{
+            sout 开启
+
+            joinPoint.proceed();
+
+            sout 提交
+
+        } catch (Throwable e) {
+            sout 回滚
+        }
+    }
+
+*********************************************************************************
+Spring AOP 安全日志解决方案
+
+    @Pointcut("execution(* com.powernode.spring6.biz..save*(..))")
+    public void savePointcut(){
+    }
+    @Pointcut("execution(* com.powernode.spring6.biz..delete*(..))")
+    public void deletePointcut(){
+    }
+    @Pointcut("execution(* com.powernode.spring6.biz..modify*(..))")
+    public void modifyPointcut(){
+    }
+    @Before("savePointcut() || deletePointcut() || modifyPointcut()")
+    public void beforeAdvice(JoinPoint joinPoint){
+        SimpleDateFormat sdf = new SimpleDateFormat(pattern: "yyvy-MN-dd HH:mm:ss sSs");
+        String nowTime = sdf.format(new Date());
+        System.out.printLn(nowTime + " zhangsan : " +
+                           joinPoint.getSignatune().getDeclaringTypelame()+ "." +
+                           joinPoint.getSignature().getNlame());
+    }
+
+    注意命名规则
+
+********************************************************************************
+Spring框架 对事务的支持
+    底层是基于AOP实现的，是一种二次包装，将原来的编程式事务（通过编写具体代码来完成事务管理）的代码进一步精简
+    声明式事务
+    Transaction tx
+        基于注解方式实现
+        基于XML配置文件方式实现
+
+复习：
+    开启事务，执行核心业务代码，提交事务，回滚事务
+
+    事务的特性：A原子性：事务式最小的工作单元，不可再分
+             C一致性：事务要求，要么同时成功，要么同时失败，事务前和事务后的总量不变
+             I隔离性：事务和事务之间因为有隔离性，才可以保证互不干扰-----四种隔离级别
+             D持久性：持久性是事务结束的标志----持久化组件
+
+三层架构:                 web后端
+    web前端====AJAX====表现层
+                        | |
+                     业务逻辑层(控制事务)
+                        | |
+                     数据访问层/持久层(Dao 不允许任何与业务逻辑相关的代码)
+                        | |
+                       数据库DB
+
+Spring的事务管理器接口
+    PlatformTransactionManager
+    其他继承的框架可以实现这个接口来实现Spring的事务管理
+    Ctrl + H 查看继承结构
+    在Spring6中有事务管理器两个默认实现
+        DataSourceTransactionManager    支持JdbcTemplate，MyBatis，Hibernate等事务管理
+        JtaTransactionManager   支持分布式事务管理
+
+*************************************************************************************
+Spring的声明式事务的注解实现
+
+    在xml配置文件中，配置事务管理器
+    <bean id="txManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <!--配置数据源-->
+        <property name="dataSource" ref="dataSource"/>
+    </bean>
+
+    <!--配置druid数据源-->
+    <bean id="dataSource" class="com.alibaba.druid.pool.DruidDataSource">
+        <property name="driverClassName" value=""/>
+        <property name="url" value=""/>
+        <property name="username" value=""/>
+        <property name="password" value=""/>
+    </bean>
+
+    添加tx命名空间
+
+    配置tx事务注解驱动器--开启事务注解，指定事务管理器
+    <tx:annotation-driven transaction-manager="txManager"/>
+
+    在方法或类上添加注解 @Transactional
+
+*************************************************************************************
+@Transactional 注解中的属性
+    可以配置
+    Propagation 事务传播行为
+    Isolation 事务隔离级别
+    int timeout 配置超时时间，默认-1 不限时
+    boolean readOnly 配置只读
+    Class<? extends Throwable>[] rollbackFor() 配置出现什么样的异常会回滚（参数是异常类的数组，可自定义）
+    Class<? extends Throwable>[] noRollbackFor() 配置出现什么样的异常不会回滚（参数是异常类的数组，可自定义）
+
+事务的转播行为/特性
+    service类中a()方法上有事务， b()方法上也有事务。当a方法执行中调用了b方法，事务是如何传递的，是合并到一个事务中，还是开启一个新的事务。
+    共有七种，spring定义为枚举类型
+      **REQUIRED: （默认）支持当前事务，如果不存在就新建一个（没有就新建，有就加入）（两个方法在同一个事务中）
+        SUPPORTS: 支持当前事务，如果当前没有事务，就以非事务方式执行（有就加入，没有就不管）
+        MANDATORY: (强制性的)表示必须运行在同一个事务中，如果当前没有事务，则抛出一个异常（有就加入，没有就抛异常）
+      **REQUIRES_NEW: 开启一个新的事务，如果一个事务已经存在，则将这个存在的事务挂起（不管有没有都会开启一个新的事务，并且原事务被挂起，两者不存在嵌套关系）
+                     （互相独立，两个方法一定不在同一个事务）
+        NOT_SUPPORTED: 以非事务方式运行，如果有事务存在则挂起当前事务（不支持事务，存在则挂起）
+        NEVER: 以非事务方式运行，如果有事务存在则抛出异常（不支持事务，存在则抛异常）
+        NESTED: （内嵌的）果当前正有一个事务在进行中，则该方法会运行在一个嵌套式事务中，被嵌套的事务可以独立于外层事务进行提交或回滚。
+                如果外层事务不存在，则逻辑同REQUIRED，新建一个事务。
+                （有事务则嵌套一个独立的事务，可以独立提交和回滚，没有事务同REQUIRED）
+
+    REQUIRED理解：
+        a方法 b方法分别属于两个不同的实现类（要@Resource给属性注入，依赖关系）
+        多个service之间，事务的传播
+        在service1中的a方法，调用service2中的b方法，
+        a方法传播设置为REQUIRED，执行dao的insert方法进行保存，然后new了service2的对象，传入新的act02对象，调用service2的b方法
+        b方法传播设置为REQUIRED，执行dao的insert方法进行保存，
+        测试：获取service1对象，传入act01对象，执行其中的a方法
+        逻辑：
+        日志会有记录：执行service1的save时Creating new transaction with...表示新建了事务
+                然后执行service1的save时Participating in existing transaction...表示加入现有事务（表示共享同一个链接对象，只有一个数据源的话）
+            注意：如果同一个事务中的方法中使用了多个数据源，也就是有多个数据库链接，则每个数据源都会有自己的事务连接对象（分布式事务）
+            注意异常的抛出与捕捉，@Transactional注解是捕捉修饰的方法所抛出的异常，（依据配置）抛异常则回滚
+        如果service2中的save方法出现异常，导致回滚，那么整个事务回滚，service1中原来正常执行成功的方法的事务也会回滚（因为是在同一个事务中）
+
+    REQUIRES_NEW理解：
+        b方法传播设置为REQUIRES_NEW
+        日志会有记录：执行service1的save时Creating new transaction with...表示新建了事务
+                然后执行service1的save时Suspending current transaction,Creating new transaction with...
+                                     表示原事务挂起，又新建了事务，两个事务互相独立，使用的是不同的事务链接对象
+        如果service2中的save方法出现异常，导致回滚，就是只有service2中的事务进行了回滚，原本service1中正常执行的方法不受影响，事务正常提交。
+            两个事务之间互相独立，互不干扰。
+
+*************************************************************************************************************************
+注意：事务链接对象(事务管理器DataSourceTransactionManager)和数据库链接对象(数据源DataSource)
+
+    事务连接对象： 事务连接对象是Spring框架提供的用于管理事务的对象。它负责创建、提交、回滚和关闭事务。
+        事务连接对象通过事务管理器来管理底层的数据库连接。事务连接对象与事务管理器一起协调事务的开始、提交和回滚操作，并确保事务的一致性和完整性。
+
+    数据库连接对象： 数据库连接对象是用于与数据库进行交互的对象。它负责建立与数据库的物理连接，并执行SQL语句以对数据库进行操作。
+        数据库连接对象用于执行数据库操作，如查询、插入、更新和删除数据等。
+
+    区别：
+        事务连接对象是用于管理事务的对象，负责事务的开始、提交和回滚操作。它是在应用程序和数据库之间的一个**中间层**，用于协调和管理事务的执行。
+        数据库连接对象是用于与数据库进行交互的对象，负责建立与数据库的物理连接，并执行SQL语句对数据库进行操作。
+
+事务管理器：
+    在Spring的事务管理中，事务连接对象是通过事务管理器来管理的。事务管理器负责管理和分配事务连接对象，以便在需要时启动、提交或回滚事务。
+    当一个方法需要执行在一个事务中时，Spring会从事务管理器中获取一个事务连接对象，并将其关联到当前线程。
+        如果在同一个线程中的其他方法也需要执行在同一个事务中，它们将会使用同一个事务连接对象。
+    这意味着在同一个数据库连接下，可以有多个事务连接对象，每个事务连接对象对应一个方法的事务执行。
+        每个事务连接对象都会**绑定到当前线程（connection holder，是一个包含了事务连接对象和数据库连接对象的容器，它会在事务开始时创建，并在事务结束时销）**，
+        以确保在**同一个事务中的方法共享同一个数据库连接**，并保证数据的一致性和完整性。
+    需要注意的是，事务连接对象的数量是由事务管理器决定的，它可以根据需要动态创建和管理事务连接对象。具体的实现取决于所使用的事务管理器的类型和配置。
+
+**************************************************************************************************************************
+Spring事务，事务的隔离级别
+    多个事务并发
+    三大读问题：
+        脏读：读取到(其他事务)没有提交到数据库的数据(还在缓存中的数据)，叫做脏读
+        不可重复读：在同一个事务当中，第一次和第二次读取的数据不一样
+        幻读：读到的数据是假的，只要并发，就会存在
+
+    事务隔离四大级别：
+        DEFAULT: 默认 -1
+        READ_UNCOMMITTED: 读未提交，存在脏读dirty read问题 1
+        READ_COMMITTED: (Oracle默认隔离级别) 读已提交，解决了脏读问题，其他事务提交之后才可以读到，但存在不可重复读问题 2
+        REPEATABLE_READ: (MySql默认隔离级别) 可重复读，解决了不可重复读问题，只要当前事务不结束，读取到的数据一直都是一样的，但存在幻读问题 4
+        SERIALIZABLE: 序列化，解决了幻读问题，事务排队依次执行，不支持并发 8
+
+        如果找不到。会报错 期望结果不符
+
+事务超时属性：
+    @Transactional(timeout = 10)
+    表示超时10秒，即为10秒内该事务中所有的DML语句还没有执行完毕的话，最终结果会选择回滚
+    异常：TransactionTimeOutException 事务超时异常
+    超时则事务回滚
+
+    重点：事务的超时时间指的是那段时间
+****是当前事务当中，最后一条DML语句执行之前的时间。如果最后一条****DML语句****后面还有很多业务逻辑，那么这些业务逻辑的执行时间不计入超时时间
+                 最后一条DML语句执行前的其他业务逻辑，会被计入超时时间
+
+事务只读属性：
+    @Transactional(readOnly = true)
+    默认为false
+    设置为只读就不可以进行 增删改 DML语句，只允许select DQL语句执行
+    作用：启动spring框架的优化策略，提高select语句执行效率
+    如果一个事务中没有增删改操作，建议设置为只读事务
+
+设置哪些异常回滚/不回滚事务
+    @Transactional(rollbackFor = {Exception.class})
+    @Transactional(noRollbackFor = {Exception.class})
+    填写.class 表示该异常类及其子类异常，都会回滚/不回滚，参数是数组，可以填写多个以精确描述
+
+    模拟异常，可以直接 throw new IOException;
+
+*****************************************************************
+事务的全注解式开发
+
+@Bean这个注解标注的方法，返回值式一个对象，Spring会将这个对象纳入IoC容器管理
+    也就是说@Bean标注方法返回的对象就是Spring容器的一个Bean了，名字在括号中定义
+
+Spring会调用写在@Configeration的类中的方法，一些方法的参数Spring会自动匹配类型来完成注入（等同于xml文件中的 ref）
+
+使用：
+    ApplicationContext applicationContext = new AnnotationConfigApplicationContext(Spring6Config.class);
+
+*******************************************************************************
+Spring声明式事务的 XML 配置文件实现
+    注解方式就是配置 事务注解驱动，然后配置 @Transactional
+
+XML配置方式：
+    依赖 spring-context spring-aspects spring-jdbc mysql驱动 druid jakarta-annotation junit
+    命名空间context tx aop
+    配置 组件扫描
+    配置 数据源 jdbcTemplate 事务管理器
+
+    配置通知，具体的增强代码，关联事务管理器
+    <tx:advice id="txAdvice" transaction-manager="txManager">
+        配置通知的相关属性
+        <tx:attributes>
+            配置事务的各种属性，方法名可以模糊匹配
+            <tx:method name="transfer" propagation="REQUIRED" rollback-for="java.lang.Throwable"/>
+            <tx:method name="save*" propagation="REQUIRED" rollback-for="java.lang.Throwable"/>
+            <tx:method name="delete*" propagation="REQUIRED" rollback-for="java.lang.Throwable"/>
+            <tx:method name="update*" propagation="REQUIRED" rollback-for="java.lang.Throwable"/>
+            <tx:method name="modify*" propagation="REQUIRED" rollback-for="java.lang.Throwable"/>
+            <tx:method name="query*" read-only="true"/>
+            <tx:method name="find*" read-only="true"/>
+            <tx:method name="get*" read-only="true"/>
+            <tx:method name="select*" read-only="true"/>
+        </tx:attributes>
+    </tx:advice>
+    配置切面
+    <aop:config>
+        配置切点，切点表达式
+        <aop:pointcut id="txPointcut" expression="execution(* com.leowork.bank.service..*(..))">
+        配置切面，就是通知+切点
+        <aop:advisor advice-ref="txAdvice" pointcut-ref="txPointcut">
+    </aop:config>
+
+***********************************************************************************
+Spring6整合JUnit5
+
+    spring6对JUnit4的支持，内置了api和一套类库
+    引入依赖：
+        spring-test
+        这个依赖既支持JUnit4 也支持JUnit5
+使用：
+    @RunWith(SpringJUnit4ClassRunner.class)
+    @ContextConfiguration("classpath:spring.xml")
+    简化加载spring容器步骤
+        context.getBean可以直接简化为属性自动注入
+        @Autowired
+        private User user;
+
+    Spring6对JUnit5的支持
+    Test --- org.junit.jupiter.api
+    第一行变为
+    @ExtendWith(SpringExtension.class)
+    @ContextConfiguration("classpath:spring.xml")
+
+**********************************************************************************
+**********************************************************************************
+**********************************************************************************
+Spring6集成MyBatis3.5
+    核心：mybatis提供的与spring框架集成的依赖
+         mybatis-spring
+    mybatis-config的配置文件xml中的部分配置会转移整合到spring的配置中，但系统级别配置(缓存等)仍旧需要
+
+复习流程：
+●第一步：准备数据库表
+  ○ 使用t_act表（账户表）
+● 第二步：IDEA中创建一个模块，并引入依赖
+  ○ spring-context
+  ○ spring-jdbc
+  ○ mysql驱动
+  ○ mybatis
+  ○ mybatis-spring：mybatis提供的与spring框架集成的依赖
+  ○ 德鲁伊连接池
+  ○ junit
+  ○ jakarta.annotation注解
+● 第三步：基于三层架构实现，所以提前创建好所有的包
+  ○ com.leowork.bank.mapper
+  ○ com.leowork.bank.service
+  ○ com.leowork.bank.service.impl
+  ○ com.leowork.bank.pojo
+● 第四步：编写pojo
+  ○ Account，属性私有化，提供公开的setter getter和toString。
+● 第五步：编写mapper接口
+  ○ AccountMapper接口，定义方法
+● 第六步：编写mapper配置文件
+  ○ 在配置文件中配置命名空间，以及每一个方法对应的sql。
+● 第七步：编写service接口和service接口实现类
+  ○ AccountService
+  ○ AccountServiceImpl
+● 第八步：编写jdbc.properties配置文件
+  ○ 数据库连接池相关信息
+● 第九步：编写mybatis-config.xml配置文件
+  ○ 该文件可以没有，大部分的配置可以转移到spring配置文件中。
+  ○ 如果遇到mybatis相关的系统级配置，还是需要这个文件。
+● 第十步：编写spring.xml配置文件
+  ○ 组件扫描
+  ○ 引入外部的属性文件
+  ○ 数据源
+  ○ SqlSessionFactoryBean配置
+    ■ 注入mybatis核心配置文件路径
+    ■ 指定别名包
+    ■ 注入数据源
+  ○ Mapper扫描配置器
+    ■ 指定扫描的包
+  ○ 事务管理器DataSourceTransactionManager
+    ■ 注入数据源
+  ○ 启用事务注解
+    ■ 注入事务管理器
+● 第十一步：编写测试程序，并添加事务，进行测试
+
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+                           http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+                           http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop.xsd
+                           http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd">
+
+    <!--添加命名空间：context，aop，tx-->
+    <!--添加组件扫描-->
+    <context:component-scan base-package="com.leowork.bank"/>
+    <context:property-placeholder location="jdbc.properties"/>
+    <!--配置druid数据源，可以使用property引入外部文件-->
+    <bean id="dataSource" class="com.alibaba.druid.pool.DruidDataSource">
+        <property name="driverClassName" value="${jdbc.driver}"/>
+        <property name="url" value="${jdbc.url}"/>
+        <property name="username" value="${jdbc.username}"/>
+        <property name="password" value="${jdbc.password}"/>
+    </bean>
+    <!--配置SqlSessionFactoryBean
+        注入mybatis核心文件配置，指定包的别名，路径，注入数据源-->
+    <bean class="org.mybatis.spring.SqlSessionFactoryBean">
+        <!--注入数据源-->
+        <property name="dataSource" ref="dataSource"/>
+        <!--指定mybatis核心配置文件-->
+        <property name="configLocation" value="mybatis-config.xml"/>
+        <!--指定包别名路劲-->
+        <property name="typeAliasesPackage" value="com.leowork.bank.pojo"/>
+    </bean>
+    <!--配置mapper扫描配置器
+        用来扫描mapper接口，动态生成代理类-->
+    <bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+        <property name="basePackage" value="com.leowork.bank.mapper"/>
+    </bean>
+    <!--配置事务管理器-->
+    <bean id="txManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <property name="dataSource" ref="dataSource"/>
+    </bean>
+    <!--启用事务注解驱动-->
+    <tx:annotation-driven transaction-manager="txManager"/>
+
+</beans>
+
+************************************************************************************
+Spring主（核心）配置文件中引入子配置文件
+    <import resource="common.xml">
+    注解开发可以减轻配置文件编写压力
+    dao xml
+    service xml
+    web xml
+    大项目中内容庞大，需要分类整理编写配置文件
+
+    测试程序中 new ClassPathXMLApplicationContext("xxxxx.xml") 的 就是主（核心配置文件）
+
+**************************************************************************************
+Spring中的设计模式
+    简单工厂模式
+        BeanFactory的Bean() 方法，通过唯一标识来获取Bean对象，式典型的简单工厂模式，静态工厂(方法)模式（不属于23中设计模式之一）
+    工厂方法模式
+        FactoryBean式典型的工厂方法模式，在配置文件中通过factory-method属性来指定工厂方法，该方法式一个实例方法
+        工厂Bean（辅助生成普通Bean） 普通Bean
+    单例模式
+        Spring用的是双重判断加锁的单例模式
+        解决循环依赖
+        三级缓存原理
+            getSingleton方法{
+                快速检查不带完整单例锁的现有实例（只找三级和二级缓存）
+                Object singletonObject = this.singletonObjects.get(beanName);
+                先从三级缓存中get，然后判断是否为空或者正在创建，找到就返回
+                if(singletonObject == null && isSingletonCurrentlyInCreation(beanName)){
+                    没找到继续向get二级缓存缓存中
+                    singletonObject = this.earlySingletonObjects.get(beanName)
+                    先get然后判断是否为空
+                    if(singletonObject == null && allowEarlyReference){
+                        二级缓存中也没有找到，开启同步代码块，再从三级缓存开始找，找不到找二级，最后找一级缓存singletonFactories，
+                        synchronized(this.singletonObjects){
+                            在完整的单例锁中一致地创建早期引用
+                            三级缓存，逐级查找（singletonObjects---> earlySingletonObjects---> singletonFactories）
+                                earlySingletonObjects.put()
+                                singletonFactories.remove()
+                        }
+                    }
+                }
+            }
+    代理模式
+        AOP的底层实现是动态代理 JDK动态代理 CGLIB动态代理
+    装饰器模式（Decorator Wrapper） 与代理模式区别（增强类 增强方法？？）
+        JavaSE的IO流是典型的装饰器模式（BufferedReader--->InputStream 装饰者可以对被装饰着进行功能增强）
+        Spring 中配置 DataSource 的时候，这些dataSource可能是各种不同类型的，比如不同的数据库：Oracle、SQL Server、MySQL等，
+        也可能是不同的数据源：比如apache 提供的org.apache.commons.dbcp.BasicDataSource、
+                        spring提供的org.springframework.jndi.JndiObjectFactoryBean等。
+        这时，能否在尽可能少修改原有类代码下的情况下，做到动态切换不同的数据源？此时就可以用到装饰者模式。
+        Spring根据每次请求的不同，将dataSource属性设置成不同的数据源，以到达切换数据源的目的。
+        Spring中类名中带有：Decorator和Wrapper单词的类，都是装饰器模式。
+    观察者模式
+        Servlet中的Listener监听器(ServletContextListener)
+                            被观察者 ServletContext
+                            事件：ServletContext对象被创建，或ServletContext被销毁
+        定义对象间的一对多的关系，当一个对象的状态发生改变时，所有依赖于它的对象都得到通知并自动更新。Spring中观察者模式一般用在listener的实现。
+        Spring中的事件编程模型就是观察者模式的实现。
+            在Spring中定义了一个ApplicationListener接口，用来监听Application的事件，
+            Application其实就是ApplicationContext，ApplicationContext内置了几个事件，
+            其中比较容易理解的是：ContextRefreshedEvent、
+                             ContextStartedEvent、
+                             ContextStoppedEvent、
+                             ContextClosedEvent
+    策略模式
+        面向接口编程
+        策略模式是行为性模式，调用不同的方法，适应行为的变化 ，强调父类的调用子类的特性。
+        getHandler是HandlerMapping接口中的唯一方法，用于根据请求找到匹配的处理器。
+        比如我们自己写了AccountDao接口，然后这个接口下有不同的实现类：AccountDaoForMySQL，AccountDaoForOracle。
+        对于service来说不需要关心底层具体的实现，只需要面向AccountDao接口调用，底层可以灵活切换实现，这就是策略模式。
+        集合 Collection--ArrayList/HashSet
+                底层可以切换实现（链表-红黑树？？）
+    模板方法模式
+        Spring中的JdbcTemplate类就是一个模板类。它就是一个模板方法设计模式的体现。在模板类的模板方法execute中编写核心算法，具体的实现步骤在子类中完成。
+        HttpServlet{
+            service(){
+                核心骨架
+                doGet
+                doPost
+                doDelete
+                ...
+            }
+        }
+        子类继承，重写doGet，完成具体实现步骤
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

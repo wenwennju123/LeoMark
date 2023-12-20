@@ -1,0 +1,1604 @@
+JavaWeb
+
+让Module变成javaEE的模块，符合webapp的规范，符合Servlet规范
+    Module----add FrameWork Support 添加框架支持
+            Web Application
+    会自动生成一个符合Servlet规范的web目录结构
+    这个带蓝点的web目录就是webapp的根
+    添加依赖 servlet-api  重点
+            JSP-api     了解即可
+
+继承Servlet接口
+    在service方法中，编写业务代码
+    会用到JDBC 流 反射等等
+
+添加mysql驱动到lib目录下
+
+在xml文件中注册编写的java程序
+
+在html页面中编写超链接，点击事件，发送请求，Tomcat执行后台的StudentServlet
+    这个html不能放在WEB-INF目录内，必须放在外边
+
+IDEA工具关联Tomcat服务器，将webapp部署到Tomcat服务器当中
+    设置Configuration
+    Tomcat server---local
+    部署Deployment，添加webapp，Artifact
+    设置项目名Application context为对应项目名sss
+
+启动Tomcat服务器，正常或Debug模式
+
+打开浏览器，输入本地IP:Tomcat端口8080/项目名，web的根/根目录下对应的html页面，html中写了超链接到测试文件
+    http://localhost:8080/sss/Start.html
+    Idea项目目录下的带蓝点的web其实就是项目的根，sss 只不过映射上了名字为web
+
+    从Idea启动浏览器会发现Idea的端口是63342
+**********************************重点**********************************
+
+    Servlet对象的生命周期
+        创建---销毁---对象创建了几个。从出生到死亡经历了什么
+
+****都是TomCat服务器(Web服务器)负责Servlet一系列的动作****程序员无权干预
+    Servlet对象的创建，对象上方法的调用，对象最终的销毁，JavaWeb程序员是无权干预的
+    Servlet对象的生命周期是由TomCat服务器，Web服务器全权负责的
+    TonCat服务器通常也被称为 WEB容器(Web Container)
+
+    自己new的Servlet对象不会受TomCat服务器管理，得放入其特定容器中(HashMap集合中)
+    web容器底层是有一个HashMap集合，其中村塾了Servlet对象和请求路径之前的对应关系
+        key             value
+        /a                Servlet对象 A
+        /b                Servlet对象 B
+        /f                Servlet对象 C
+        ...               ...
+    默认情况下服务器在启动时，并没有实例化Servlet对象
+    在用户没有发送请求之前，就创建了全部的对象会很占内存，浪费资源
+    如果需要在启动时候创建，需要添加子标签：
+    <load-on-startup>0(正整数就行)</load-on-startup>
+    这里的正整数越小，表示创建优先级越高；不写的缺省值为-1，表示不会在启动时创建；
+    一般情况下不会使用
+
+    在Servlet的类里面写的System.out.println()会将信息输出到服务器控制台，也叫后台
+
+    服务器在启动时，会先解析XML文件，将mapping下的请求路径和servlet的类名进行绑定
+
+    用户第一次发送请求时候，
+    会先调用构造方法,实例化对象（调用无参构造）
+    然后调用init方法（此时A Servlet对象已经被创建了，否则空指针异常）
+    然后调用service方法
+
+    init方法只会被调用一次，之后的重复请求都会只调用a servlet对象的service方法，不会再new对象
+    只有第一次访问的时候会创建新对象，构造方法只执行一次，init方法只被调用一次
+    也就是servlet是单例的，只有一个实例，（因为对象的创建由服务器全权负责，程序员无权干预）
+    但是并不符合单例模式于是称为假/伪单例，真单例模式构造方法是私有化的
+    多线程共享servlet对象
+    成员变量存在堆内存当中，多线程访问servlet对象可能会出现问题
+
+    只要用户发送一次请求，service方法就会被服务器调用一次（反射机制调用方法）
+
+    服务器关闭时，调用destroy方法，也是只被服务武器调用一次
+    destroy方法时使用a servlet对象去调用，方法调用时，对象并没有销毁。
+    destroy方法中可以编写销毁前的准备，可能需要关闭一些流，数据库链接等
+    destroy方法结束之后，对象被销毁，其内存被Tomcat服务器释放
+
+    Servlet类中的方法
+    构造方法 只执行一次
+    init 只执行一次，设置一些初始化操作，例如数据库连接池，线程池
+    service 用户每发送一次请求，就执行一次。使用频率最高
+    getServletConfig
+    getServletInfo
+    destroy 只执行一次，设置一些结束时操作，进行一些资源的关闭，资源的保存，持久化
+
+    编程时，servlet类的构造方法不建议程序员编写，因为如果编写了有参却不手动提供无参构造
+    则会报错 500-内部错误 因为Tomcat调用无参创建对象，会导致对象无法正常实例化
+    故此init方法存在是为了不写构造方法，无法被构造方法代替
+
+    我们编写一个Servlet类直接实现Servlet接口有缺点：
+        我们只需要service方法，其他方法大部分情况下都是不需要的，代码比较丑陋
+    使用适配器模式改造servlet
+        使用适配器抽象类实现接口实现其中全部方法，然后将所需核心方法设置为抽象
+        之后对象继承抽象类，实现核心抽象方法
+        就无需实现其他方法
+    GenericServlet实现Servlet接口，作为适配器
+    以后编写的所有Servlet类继承GenericServlet，重写service方法即可
+
+    改造GenericServlet这一抽象类，丰富方法，利于子类开发
+    GenericServlet中的构造方法与init方法，，，destroy均会执行(还是Tomcat服务器调用)
+    Tomcat服务器会创建init方法中的ServletConfig对象，然后调用init方法
+    将此对象传递给init方法
+
+    伪代码演示Tomcat
+    public class Tomcat{
+        public static void main(String[] args){
+            //Tomcat服务器伪代码演示
+            //使用反射机制,调用无参构造，实例化LoginServlet对象
+            Class clazz = Class.forName("完整类名LoginServlet");
+            Object obj = clazz.newInstance();
+
+            //向下转型
+            Servlet servlet = (Servlet)obj;
+
+            //创建ServletConfig对象，Tomcat服务器负责实例化对象
+            //会在控制台上输出org.apache.catalina.core.StandardWrapperFacade@82bbad0
+            //此处使用了多态，说明了Tomcat服务器完全实现了servlet规范
+            ServletConfig servletConfig = new StandardWrapperFacade();
+
+            //调用servlet的init方法
+            servlet.init(servletConfig);
+
+            //调用servlet的service方法。。。。
+
+        }
+    }
+*************************************************************************
+
+ServletConfig
+        Servlet对象的配置信息对象
+        ServletConfig对象中封装了<servlet></servlet>标签中的配置信息，web.xml文件中的servlet的配置信息
+    一个Servlet对象对应一个ServletConfig对象
+    100个Servlet对象对应100个ServletConfig对象
+    Servlet对象由Tomcat服务器创建，并且ServletConfig对象也是Tomcat服务器创建，
+    并且默认情况下，他们都是在用户发送第一次请求时创建
+    Tomcat服务器调用Servlet对象的init方法的时候需要传一个ServletConfig对象的参数给init方法
+    ServletConfig接口的实现类是Tomcat服务器（WEB服务器）给实现的
+    ServletConfig接口中常用的方法有：
+        getServletName()
+        getServletContext()
+        getInitParameter(String name)
+        getInitParameterNames()
+
+ServletContext
+        一个webapp对应一个ServletContext对象（xml文件）
+        由这个webapp中所有的servlet对象所共享
+        ServletContext对象在服务器启动阶段创建，在服务器关闭时销毁（生命周期）
+        ServletContext对象是应用级对象，不是容器级对象
+        ServletContext对象被称为Servlet上下文对象，或者叫Servlet对象的环境对象
+        ServletContext是一个接口，Tomcat服务器对ServletContext接口进行了实现
+            ServletContext对象的创建也是Tomcat服务器来完成的，在启动webapp的时候创建
+            启动时有：
+                Artifact is being deployed
+                Artifact is deployed successfully
+                Deploy took 711 milliseconds
+            表明了Tomcat在创建对象（部署）
+    ServletContext接口中的常用方法
+        Servlet3.0后增加了很多实用方法
+        addFilter
+        addJspFile
+        addListener
+        addServlet
+        ...
+        getInitParameter(String name)
+        getInitParameterNames()
+
+    <!--在webapp下进行配置，所有servlet共享-->
+    <context-param>
+        <param-name>pageSize</param-name>
+        <param-value>10</param-value>
+    </context-param>
+    <context-param>
+        <param-name>startIndex</param-name>
+        <param-value>0</param-value>
+    </context-param>
+    以上配置信息属于应用级的配置信息，一般一个项目中共享的配置信息会放到以上标签中
+    如果某个配置信息只是想给某一个servlet作为参考，那么需要将其配置到Servlet标签中
+    使用ServletConfig对象来获取
+
+        getContextPath() 获取上下文的路径
+        getRealPath(String name) 获取文件的绝对路径，真实路径
+        log(String message) 记录日志，通过servletContext对象也可以记录日志
+        log(String message, Throwable t)
+
+ServletContext对象也被叫做应用域（还有其他域例如请求域，会话域）
+    如果所有的用户共享一份数据，并且这个数据很少被修改，并且这个数据量很少。
+    那么就可以将这些数据梵高ServletContext这个应用域中
+    1、 因为ServletContext对象只有一个，用户共享，只有共享的数据放进去才有意义
+    2、并且如果数据量较大的话，会比较占用堆内存，并且ServletContext对象生命周期很长，
+        服务器关闭的时候，对象才会销毁，大数据量会影响服务器的性能
+    3、被所有用户共享的数据，如果涉及到修改操作，必然会存在线程并发所带来的安全问题
+    优点：数据量小，所有用户共享，又不修改。这样的数据放到ServletContext这个应用域当中，
+        会大大提高执行效率，因为应用域相当于一个缓存，放到缓存中的数据，下次在使用的时候，
+        不需要从数据库中再次读取，（类比JAVA运行时常量池）大大提升执行效率
+    存：setAttribute(String name,Object value)    类比map.put(k,v)
+    取：getAttribute(String name)     类比object v = map.get(k)
+    删：removeAttribute(String name)  类比map.remove(k)
+    (sqlSession是MyBates中 servlet中是session)
+
+    实际开发中，编写的Servlet类并不会直接去继承GenericServlet
+    因为开发B/S结构的系统，是基于HTTP超文本传输协议的
+    在Servlet规范中，提供了一个类叫做HttpServlet，是专门为HTTP协议准备的一个Servlet类
+    实际开发中的Servlet类的编写需要继承HttpServlet（它继承了GenericServlet）
+    继承关系
+       -jakarta.servlet.Servlet (interface)
+           -jakarta.servlet.GenericServlet (abstract class)
+               -jakarta.servlet.HttpServlet (abstract class)
+**************************************************************************
+
+缓存机制 cache（目前）
+    堆内存当中的字符串常量池
+        ”abc“现在字符串常量池中查找，如果有，直接使用。如果没有，则新建然后放入字符串常量池
+    堆内存当中的整数型常量池
+        -128~127 共256个integer类型的引用，如果数据的范围没有超过这个范围，则直接从常量池中取
+    线程池
+        TomCat服务器支持多线程，在Tomcat服务器启动时，会创建好一个线程池，这个集合中有N个线程对象
+        用户发送请求，会需要有对应的线程来处理请求。线程对象就会直接从线程池中取用
+        WEB服务器，应用服务器都支持多线程，都有线程池机制
+    连接池 Connection Cache
+        java语言链接数据库的链接对象 java.sql.Connection
+        JVM进程和MySql进程之间建立链接通道
+        事先建立好N个Connection链接对象
+        将链接对象放到一个集合当中，我们把这个放有Connection对象的集合称为连接池
+        每一次用户链接的时候不需要新建链接对象，省去了新建Connection对象的环节，提升访问效率
+
+        例如在启动时，类加载时的静态代码块中实例化对象，集合。根据业务需求设定最小连接数，最大连接数
+        提供固定数量的链接对象，用户链接只能从其中进行取用
+        来达到资源与效率的最佳配比
+        并且限制最大访问，保护数据库安全，多线程环境下
+        例如压力测试，模拟多用户并发访问
+    Redis
+        NoSql数据库，非关系型数据库，缓存数据库
+    ServletContext应用域中存储数据，也等于是将数据存放到缓存cache中
+
+**************************************************************************
+
+HTTP协议
+    协议是某些人或组织提前制定好的一套规范，大家都按照这个规范来，这样可以做到沟通无障碍
+    协议就是一套规范，标准。由W3C执行的一套超文本传输协议（例如HTML4.0 5.0 XML DOM等）
+    万维网之父 蒂姆 伯纳斯 李
+    是B/S架构间的通信协议。他们之间发送数据都要遵循HTTP协议
+    这样B端和S端就可以解耦合
+
+    HTTP协议不但可以传递普通文本，还可以传递声音，视频，图片等流媒体信息
+
+    HTTP协议包括
+        请求协议request
+        响应协议response
+        HTTP协议就是提前制定好的一套消息模板
+            各种服务器和WEB浏览器都遵循这一套模板，
+            不同品牌的服务器和不同品牌的浏览器之间的通信就可以达成
+
+HTTP的请求协议(B-->S)
+    请求行
+    请求头
+    空白行
+    请求体
+
+HTTP的响应协议(S-->B)
+    状态行
+    响应头
+    空白行
+    响应体
+
+浏览器向服务器发送请求一共有七种方式
+*********************************************************************************************
+
+HTTP请求协议的具体报文：GET请求
+
+    GET /Servlet05/GetServlet?username=123123&userpwd=123123 HTTP/1.1       请求行
+    Host: localhost:8080                                                    请求头
+    Connection: keep-alive
+    Cache-Control: max-age=0
+    Upgrade-Insecure-Requests: 1
+    User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.110 Safari/537.36
+    Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8
+    Referer: http://localhost:8080/Servlet05/Index.html
+    Accept-Encoding: gzip, deflate, br
+    Accept-Language: zh-CN,zh;q=0.9
+    Cookie: Idea-6a2dac1c=a989e925-1e29-404c-8471-9871c8cf0274; Idea-a6e9152e=49fda1c5-9d1c-4d95-962d-c630b170195d
+                                                                            空白行
+    username=123123&userpwd=123123                                          请求体
+
+HTTP请求协议的具体报文：POST请求
+
+    POST /Servlet05/PostServlet HTTP/1.1                                    请求行
+    Host: localhost:8080                                                    请求头
+    Connection: keep-alive
+    Content-Length: 28
+    Cache-Control: max-age=0
+    Origin: http://localhost:8080
+    Upgrade-Insecure-Requests: 1
+    Content-Type: application/x-www-form-urlencoded
+    User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.110 Safari/537.36
+    Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8
+    Referer: http://localhost:8080/Servlet05/Index.html
+    Accept-Encoding: gzip, deflate, br
+    Accept-Language: zh-CN,zh;q=0.9
+    Cookie: Idea-6a2dac1c=a989e925-1e29-404c-8471-9871c8cf0274; Idea-a6e9152e=49fda1c5-9d1c-4d95-962d-c630b170195d
+                                                                            空白行
+    username=jack&userpwd=123123                                            请求体
+
+查看请求形式
+    浏览器F12 网络选项 network
+
+    请求行包括三个部分
+        请求方式 多种：get/post/delete/put/head/options/trace
+        URI     统一资源标识符，代表网络中某个资源的名字。但是通过URI是无法定位资源的
+                URL是统一资源定位符，代表网络中某个资源。同时通过URL是可以定位到该资源的
+                URL包括URI 例如URL http://localhost:8080/Servlet05/Index.html
+                Location  Identifier          对应URI是/Servlet05/Index.html
+        协议版本号 HTTP/1.1
+
+    请求头包括
+        请求的主机
+        主机的端口
+        浏览器信息
+        平台信息
+        cookie等信息
+        ...
+    空白行
+        用来分隔请求头和请求体
+
+    请求体
+        向服务器发送的具体数据
+
+******************************************************************************************
+
+Get响应 Response Headers
+    HTTP/1.1 200 ok                                     状态行
+    Content-Type: text/html;charset=UTF-8               响应头
+    Content-Length: 173
+    Date: Tue, 04 Apr 2023 08:09:34 GMT
+    Keep-Alive: timeout=20
+    Connection: keep-alive
+                                                        空白行
+                                                        响应体
+    <!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>TestGet</title></head><body><h1>from get servlet</h1></body></html>
+
+    状态行由三部分组成：
+        协议版本号    HTTP/1.1
+        状态码       200 表示请求相应成功，正常结束
+                    404 表示访问的资源不存在，通常是因为路径错误或者是服务器中对应资源未启动成功，属于前端错误
+                    405 表示前端发送的请求方式于后端请求的处理方式不一致时发生
+                            例如前端发送的时post请求，后端处理按照get请求方式解析，此时发生405
+                    500 表示服务器端的程序（c、java、php、python等）出现了异常，一般会认为是服务器端的错误导致的
+                    以4开始的状态码一般是浏览器端的错误导致的
+                    以5开始的状态码一般是服务器端的错误导致的
+        状态描述信息
+                    ok 表示正常成功结束
+                    not found 表示资源找不到
+
+    响应头的组成
+        响应的内容类型 Content-Type
+        响应的内容长度 Content-Length
+        响应的日期时间 Date: Tue, 04 Apr 2023 08:09:34 GMT
+        ...
+
+    空白行
+        用来分隔响应头和响应体
+
+    响应体
+        响应正文，这些内容是很长的字符串，由后端程序编写提供，交给浏览器渲染效果，最终展示
+**********************************************************************************************
+
+默认情况下一律都是Get请求，当form表单中method设置为post时，才为Post请求
+在浏览器地址栏上输入URL，敲回车属于get请求
+在浏览器上直接点击超链接，属于get请求
+使用form表单，提交数据时，form标签中没写method属性或者指定为get，就是get请求
+...
+
+Get请求和Post请求的区别
+    get请求发送数据的时候，数据会挂在URI的后面，并且在URI后面添加一个“？”，“？”后面时数据，
+    这样会导致发送的数据回显在浏览器的地址栏上
+    get请求通过请求行发送，post请求通过请求体
+    post请求发送的数据不会回显到浏览器的地址栏上
+
+    无论get请求还是post请求，数据发送的格式时完全相同的
+    name=value&name=value&...
+    然后就可以使用字符串拆分，s.split("&") 拆成一个数组
+    然后再s.split("=") 拆成一堆键值对形式，存入map
+    然后再与数据库交互...
+
+    name是 以form表单为例，是form表单中input标签的name
+    value是 以form表单为例，是form表单中input标签的value
+
+    get请求只能发送普通的字符串，并且发送的字符串长度有限制，不同的浏览器限制不同，没有明确的规范
+    get请求无法发送大数据量
+    在W3C中是这样说的，get请求比较适合从服务器端获取数据
+
+    post请求可以发送任何类型的数据，包括普通字符串，流媒体等信息：视频音频图片等
+    post请求可以发送大数据量，理论上没有限制
+    在W3C中是这样说的，post请求比较适合像服务器传送数据
+
+****get请求是绝对安全的，因为get请求只是为了从服务器上获取数据
+    post请求是危险的，因为post请求是向服务器提交数据，可能通过后门威胁到服务器
+    另外post是为了提交数据，所以一般情况下拦截请求的时候，大部分会拦截（监听）post请求
+
+    get请求浏览器支持缓存，post请求不支持缓存。第一次请求从服务器发送回的数据可以缓存到本地，
+    第二次及以后相同的请求就可以直接从本地读取，无序再从服务器上下载
+    任何一个get请求最终的响应结果，都会被浏览器缓存起来，在浏览器缓存当：
+    *****一个get请求的路径，对应一个 资源*****
+    实际上，只要发送get请求，浏览器首先就是先从本地浏览器缓存当中寻找，如果命中，直接读取
+    如果未命中，则向服务器发送get请求，从服务器上获取，来提高用户使用体验
+    post请求之后，服务器响应的结果不会被浏览器缓存起来，因为这样没有意义
+
+    如果我们不希望get请求先去浏览器缓存中寻找，而是去服务器上去找，该如何操作：
+        只需要每一次get请求的路径不同即可，例如路径加上请求的系统时间毫秒数（时间戳）
+        然后服务器端过滤掉时间戳，原请求路径不变
+
+Get请求和Post请求的选择
+    post请求用来修改服务器端的资源，有可能修改成功，也可能失败（写）。get请求仅仅是从服务器端获取（读）
+    读多写少，读写分离...
+    大部分的form表单提交，都是post方式。因为form表单中要填写大量的数据，这些数据是收集用户的信息，一般是要传给服务器
+    服务器将这些数据保存、修改等。或者具有敏感信息的表单。
+    文件上传，一定是post
+    其他的情况都是get请求
+************************************************************************************
+
+设计模式是解决某类问题的固定的解决方案，可以被重复使用
+    GoF设计模式：通常我们所说的23中设计模式（Gang of Four 四人组提出的设计模式）
+        单例
+        工厂
+        代理
+        门面
+        责任链
+        观察者
+        模板方法
+        ...
+    javaEE设计模式
+        DAO
+        DTO
+        VO
+        PO
+        pojo
+        ...
+
+模板方法设计模式Template Method
+*************************************************************************************
+
+HttpServlet类是专门为HTTP协议准备的，比GenericServlet更加适合HTTP协议下的开发
+位置：jakarta.servlet.http.HttpServlet
+一些接口：
+    jakarta.servlet.Servlet             核心接口    接口
+    jakarta.servlet.ServletConfig       配置信息    接口
+    jakarta.servlet.ServletContext      上下文      接口
+    jakarta.servlet.ServletRequest      请求       接口
+    jakarta.servlet.ServletResponse     响应       接口
+    jakarta.servlet.ServletException    异常       类
+    jakarta.servlet.GenericServlet      标准通用的Servlet类 抽象类
+
+http包下的类和接口
+    jakarta.servlet.http.HttpServlet            HTTP协议专用的Service类，抽象类
+    jakarta.servlet.http.HttpServletRequest     HTTP协议专用的请求对象
+    jakarta.servlet.http.HttpServletResponse    HTTP协议专用的响应对象
+
+HttpServletRequest，简称request对象。其中封装了请求协议的全部内容（WEB服务器封装的）
+    Tomcat服务器（WEB服务器）将请求协议中的数据全部解析出来，然后将这些数据全部封装到request对象中了
+    也就是说只要面向HttpServletRequest,就可以获取请求协议中的数据
+*************************************************************************************
+
+Servlet类的开发步骤
+    编写Servlet类，直接继承HttpServlet
+    重写doGet方法或者doPost方法，取决于业务需求
+    将Servlet类配置到web.xml文件中
+    准备前端页面，form表单，指定请求路径
+
+关于一个web站点的欢迎页面
+    对于一个webapp来说，我们可以设置他的欢迎页面。当我们访问web站点的时候，没有指定任何资源路径。
+    此时会默认访问站点的欢迎页面
+    配置 <welcome-file-list>
+            <welcome-file>Login.html</welcome-file>
+        </welcome-file-list>
+    此路径不需要以 / 开始
+    默认从webapp的根目录下查找
+    如果设置多个欢迎页面，越靠上的优先级越高，找不到的继续向下寻找，都找不到则404
+
+    当文件名设置未index.html的时候，不需要在web.xml文件中进行配置欢迎页面，
+    这是因为Tomcat服务器中提前配置好了此文件名路径
+    配置欢迎页面由两种方式
+        在webapp内部的web.xml文件(局部配置，局部优先，就近原则--应用层面)
+        如果配置了局部配置，则全局配置失效
+        在Tomcat服务器中，CATALINA_HOME/conf/web.xml配置(全局配置--服务器层面，一个服务器内可以运行多个应用)
+        Tomcat服务器内置的全局欢迎页面是index.html;index.htm;index.jsp;
+欢迎页是servlet的情况
+    首先写一个Servlet，继承HttpServlet
+**********************************************************************************
+关于WEB-INF目录
+    放在WEB-INF目录下的资源是受保护的，无法通过浏览器上直接路径访问，回报404
+    所以HTML，CSS，JS，img等静态资源一定要放在WEB-INF目录之外
+**********************************************************************************
+***************************************重点****************************************
+**********************************************************************************
+HttpServletRequest
+    接口全名:jakarta.servlet.http.HttpServletRequest
+    属于Servlet规范的一员，其父接口是ServletRequest
+    输出request对象
+        org.apache.catalina.connector.RequestFacade@......
+    其实现了HttpServletRequest接口
+        public class RequestFacade implements HttpServletRequest{}
+    即web服务器或者叫web容器实现了HttpServletRequest接口，即实现了Servlet规范
+    javaWeb程序员只需要面向request接口编程，调用接口的方法即可获取其中全部内容
+    用户发送HTTP请求协议，Tomcat服务武器将HTTP协议中的信息以及数据全部解析出来
+    然后将其封装到HttpServletRequest对象中，传递给javaWeb后端
+
+    其中包装的信息有：
+        涵盖了HTTP请求协议中的每一个信息---请求行，请求头，空白行，请求体
+    request对象生命周期：
+        用户每发送一次请求，就会创建一个request对象。n个请求n个request
+        这个request对象只在当此请求中生效
+        request对象和response对象的生命周期极短
+
+HttpServletRequest接口中常用方法（很多都是继承自ServletRequest接口）
+
+    例如：前端提交的数据格式：username=abc&userpwd=111&aihao=d&aihao=s&aihao=tt
+    前端表单提交了数据，浏览器往服务器传的一律都是字符串
+    根据&拆分，再根据=拆分，key=value
+    Map集合存储数据的格式是（Map的key不可以重复）
+         Map<String, String[]>
+
+    String getParameter(String name);
+        最常用，根据key获取value这一个这一个一维数组中的第一个元素，大部分的提交都是采用此方法获取
+    Enumeration<String> getParameterNames();
+        获取Map集合中所有的key
+    String[] getParameterValues(String name);
+        比较常用，根据key获取Map集合中的value，例如复选框提交的数据,作为一维数组
+    Map<String, String[]> getParameterMap();
+        获取这个Map集合
+
+    数组对象的输出结果，调用toString后的结果
+        username=[L]java.lang.String;@7cce40b4
+**************Parameter是有关处理前端传递的数据，Attribute是有关域的***************************
+request对象又称为请求域对象
+    应用域对象是servletContext，servlet上下文对象
+    所有用户共享的数据，数据量小并且修改很少的数据可以放入应用域，可以提高程序的执行效率（缓存机制）
+    实际上向应用域当中绑定数据，就相当于把数据放入了缓存当中cache，然后用户访问的时候直接从缓存中取
+    减少数据库IO操作，磁盘读写操作，大大提升系统的性能，
+    缓存技术是提高系统性能的重要手段，
+
+    常见缓存技术：
+        字符串（运行时）常量池
+        数据库连接池
+        线程池（所有的WEB服务器都支持的一种机制）
+        Redis
+        mongoDB
+
+    ServletContext当中有几个操作域的方法：（类似Map集合<K,V> put get remove）
+        void setAttribute(String var1, Object var2);
+            向域当中绑定数据
+        Object getAttribute(String name);
+            从域当中获取数据，根据name
+        Enumeration<String> getAttributeNames();
+            从域当中获取所有的数据
+        void removeAttribute(String name);
+            将域当中绑定的数据移除
+
+请求域对象要比应用域对象的范围小很多，生命周期短很多。
+请求域对象也有这些方法
+    void setAttribute(String var1, Object var2);
+        向域当中绑定数据
+    Object getAttribute(String name);
+        从域当中获取数据，根据name
+    void removeAttribute(String name);
+        将域当中绑定的数据移除
+
+请求域只在一次请求内有效，每次请求之间的请求域独立，一次请求结束之后，这次的请求域就销毁了
+请求域和应用域的选用原则：
+    尽量使用小的域对象，因为小的域对象占用的资源少
+
+Servlet中的请求转发机制,让多个Servlet可以共享数据
+    例如：执行了AaServlet之后，跳转到BbServlet进行执行
+    注意：Servlet对象不可以自己new，自己new的对象不受Tomcat服务器管理，属于非法对象
+    getRequestDispatcher(String path) 获取请求转发器
+    步骤：
+        获取请求转发器对象
+        传入资源路径，就是xml文件中的url-pattern，不带webapp根路径项目名
+        获取请求转发器对象，将 /b 下一个跳转的资源路径包装到请求转发器中，告诉Tomcat服务器
+        调用请求转发器RequestDispatcher的forward方法进行转发
+        作为参数的request和response均要传递给目标资源
+        requestDispatcher.forward()其实也是一次请求
+
+多个Servlet可以共享数据的方法
+    应用域：范围太大，占用资源较多，不建议使用。
+    放入request域，请求域中，然后由AServlet转发到BServlet中。保证AServlet和BServlet在同一次请求中
+    就可以让多个Servlet共享数据
+
+转发的资源只要是Tomcat（WEB容器）当中的合法资源都可以转发，例如html...
+转发的路径以 / 开始，不加项目名，就是xml文件中的url-pattern
+
+ServletRequest中的getRealPath方法已经被ServletContext中的getRealPath替代。获取绝对路径需要使用需要使用Context的
+
+getRemoteAddr() 获取客户端IP地址 Internet Protocol
+
+setCharacterEncoding 设置请求体字符集编码格式
+    post请求是在请求体中提交数据的，所以此方法可以用来处理POST请求的乱码问题
+    get请求是在请求行中提交数据，所以此方法不能解决GET请求的乱码问题
+    （比如Tomcat9及其之前版本，请求体中发中文后端获取会出现乱码，Tomcat10中解决了这个问题，字符集是UTF-8）
+    （Tomcat9及其之前版本还会出现响应out.print中文乱码问题，需要在ContentType中加上charset=UTF-8，例如xml文件开头就有此字符集规定）
+    （Tomcat9中的conf目录下 service.xml 中Connector标签中可以配置port端口，URIEncoding默认是UTF-8等，
+    所以发get请求在请求行带中文不会出现问题，Tomcat8之前是ISO-8859-1，需要手动修改）
+
+getContextPath() 动态获取应用的根路径
+
+getRequestURI() 动态获取请求的URI，带项目名
+
+getServletPath() 动态获取请求的URI，不带项目名
+
+**************************************************************************************
+
+            使用纯Servlet 实现单表CRUD操作
+
+**************************************************************************************
+步骤：
+    准备数据库表（SQL脚本）
+    drop table if exists mydept;
+        create table mydept(
+            deptno int primary key,
+            dname varchar(255),
+            loc varchar(255)
+        );
+        insert into dept(deptno,dname,loc) values(10,"销售部","北京");
+        insert into dept(deptno,dname,loc) values(20,"研发部","上海");
+        insert into dept(deptno,dname,loc) values(30,"技术部","广州");
+        insert into dept(deptno,dname,loc) values(40,"媒体部","深圳");
+    准备一套HTML页面,并将其中的链接跑通,页面流转
+        欢迎页面
+        部门列表页面
+        新增页面
+        修改页面
+        详情页面
+    分析系统包括哪些功能
+        只要这个操作链接了数据库，就表示一个独立的功能
+        查看部门列表
+        新增部门
+        删除部门
+        查看部门详情
+        跳转到修改页面
+        修改部门
+    在IDEA中搭建开发环境
+        创建一个webapp
+        向webapp中添加链接数据库的jar包，mysql驱动
+        JDBC工具类（以后MyBaties会更方便）
+    逐步实现功能
+        写代码的过程最好是程序执行的过程，不要乱了顺序。一个顺序流下来后基本不会出现意外。
+        调错一般先定位前端还是后端错误
+        1、查看部门列表功能
+            先修改前端 修改查看部门列表页面的超链接
+            编写web.xml文件
+            编写对应的类，继承HttpServlet类，重写doGet方法
+            在doGet方法中链接数据库，查询所有部门，动态展示到页面上
+            修改部门列表页面，分析哪部分html是固定的，那部分是动态展示的
+            list.html中所有双引号要替换成单引号
+            因为java中out.print()是双引号
+        2、查看部门详情功能
+            顺序，从前端到后端一步一步实现，定位用户点击的位置与路径，将原来静态的程序改为动态的
+            超链接中路径必须要项目名
+            动态获取路径，项目名，字符串拼接
+            out.print("<a href='" + contextPath + "/dept/detail?deptno=" + deptno + "'>详情</a>");
+            向服务器提交数据的格式URI?name=value&name=value...
+        3、删除部门功能
+            从前端开始，用户点击删除按钮
+            提示是否删除，对话框
+                <a href="javascript:void(0)" onclick="回调函数">删除</a>
+                如此设置，表示保留超链接样式，但是点击此超链接之后不跳转页面，但是JS代码正常可以执行onclick事件句柄
+            确认删除，链接数据库，删除数据库中对应内容(href是hot reference热链接超链接)
+                使用js代码向服务器发送请求window.document.location.href='';
+                简写：window.location='';
+                前端向后端发请求要带项目名
+            重新查询全部内容并动态显示
+        4、新增部门功能
+            向服务器提交数据，使用post请求
+            实际开发会添加很多验证，前端验证，后端验证。在用户使用过程中不断测试修改，更加健壮
+        5、修改部门功能
+            点击修改，跳转到详情界面
+            通过部门编号，链接数据库，获取详细信息
+            修改后，点击修改按钮，提交修改内容，更新数据库中资源
+***************************************************************************
+遇到的问题
+    1、doPost(){}中，需要转发请求到另一个servlet
+    但是另一个Servlet处理的是get请求，doGet(){}
+    使用转发机制就只能在转发目标的servlet中再重写doPost方法，里面调用回get方法，this.doGet();
+    引入重定向机制，完成资源的跳转
+
+    转发和重定向机制：
+        代码上的区别：
+            转发：
+                request对象获取资源转发器对象传入路径，调用forward方法传入request和response
+                request.getRequestDispatcher("url-pattern").forward(request,response);
+                转发的时候也是一次请求，为了使多个资源处在同一请求域中，需要传入当前request和response对象，保证Attribute可以取到
+                无论转发多少次，始终都是同一次请求，都在同一个request域当中
+                由服务器负责调配，与浏览器无关
+            重定向：
+                response对象调用sendRedirect("项目名 + url-pattern");
+                重定向中的路径需要额外添加项目名，因为response具有响应能力，将此路径响应给浏览器
+                浏览器自发的向服务器发送该请求，作为一次全新的请求。故需要项目名（类比前端超链接 href action等）
+                每重定向一次，就会发送一次全新的请求
+                由浏览器调配自发发送路径，与服务器无关
+        形式上的区别：
+            转发：
+                在浏览器地址栏上发送的请求是localhost:8080/Servlet10/a
+                直到最终请求结束，地址栏上依旧是这个，无论转发多少次，始终都是同一次请求
+                由服务器负责调配，与浏览器无关
+                （举例：张三没钱了，向李四借钱。李四也没钱，但是够义气，向王五借了钱。之后李四把钱借给张三
+                    张三并不知道这个钱是王五的，张三只求了一个人，并且认为这个钱是李四借的）
+            重定向：
+                浏览器上最后显示的地址，就是最后一次重定向浏览器发送的请求的地址
+                由浏览器调配自发发送路径，与服务器无关
+                （举例：张三没钱了，向李四借钱。李四也没钱，但是有一个好哥们叫王五，就把王五的具体家庭地址告诉了张三
+                    张三沿着地址找到王五向王五借钱，借到了。
+                    张三知到钱是从王五借到的，并且过程中求了两个人。）
+        选择：
+            转发：
+                如果在上一个Servlet当中向request域当中绑定了数据，希望从下一个Servlet当中把request域里面的
+                数据提取出来，采用请求转发。效率稍微高一点（无法从get转到post，无法跨应用）
+                并且一但刷新一整套都重新执行一遍，因为请求路径没变
+            重定向：
+                其余全部情况都采用重定向形式
+
+    2、每一次请求都需要新获取一个链接对象，十分影响效率。
+    引入连接池
+
+    3、html代码在java程序中全部由out.print输出,代码繁琐容易错误
+    引入JSP：
+        在Java的Servlet类中编写前端HTML/CSS/JavaScript的问题：
+        代码编写难度大，耦合度高，无法及时发现错误
+        java要编译，要打war包，发布部署项目才能测试出错误
+        代码不美观并且维护成本高，只要前端代码有改动，就需要重新编译java程序，生成新的class
+    解决思路：
+        程序员只需要编写前端代码，由机器（程序）来将前端的程序翻译生成到java中out.print(" ")；格式的代码
+        最后执行的依旧是很多条out.print(" ");
+        之后整合起来一起自动编译
+
+    4、简单的单表CRUD功能，写了六个Servlet，代码臃肿，如果系统更加复杂，会导致类爆炸（类的数量急剧增加）
+    引入模板方法Template method设计模式
+    一个业务对应一个Servlet类，这个业务中一个请求对应其中的一个方法
+
+    5、xml文件中配置了大量的servlet路径，十分臃肿
+    引入Servlet注解式开发
+
+*****************************************************************************
+bean，符合某种规范的java类，实体类,起到封装数据的作用，负责封装数据
+Javabean
+    咖啡豆，寓意Java程序是由一个一个的Javabean组成的
+    Javabean规范：（符合规范来使其具有通用性）
+        有无参数的构造方法
+        属性私有化
+        对外提供公开的setter和getter方法
+        重写toString()
+        重写hashCode + equals方法
+        支持java.io.Serializable接口，可序列化
+******************************************************************************
+Servlet中的注解式开发,简化配置文件xml
+    web.xml文件中进行servlet信息的配置，开发效率较低，并且修改很少
+    Servlet3.0之后推出了各种Servlet基于注解式开发
+    @WebServlet
+    jakarta.servlet.annotation.WebServlet
+        优点：开发效率高，不需要编写大量的配置信息，直接在java类上使用注解进行标注
+        一般是注解+配置文件的开发模式
+        一些不会经常变化修改的配置建议使用注解，一些可能会被修改的建议写到配置文件当中
+
+    在Servlet类中使用@WebServlet
+    修饰的元注解
+        @Target({ElementType.TYPE})    只能修饰类
+        @Retention(RetentionPolicy.RUNTIME)     不仅被保存到class文件中，jvm加载class文件之后，仍然存在
+        @Documented     可以生成到API文档中
+
+    重要属性
+        name() 用来指定<servlet-name>
+        当注解的属性是一个数组，并且数组中只有一个元素，大括号可以省略
+        value() 功能同urlPatterns()属性，也是字符串数组。但是注解中特性，注解的属性名是value时value可以省略，看上去就只有个字符串路径
+        urlPatterns() 用来执行复数的<url-pattern>映射路径，字符串数组形式
+        loadOnStartUp() 用来配置，服务器启动时，加载此servlet对象，数字越小优先级越高，默认-1表示不创建
+        initParams() 注解数组，配饰初始化参数{@WebInitParam(name=”“,value=”“),@WebInitParam(name=”“,value=”“),...}
+        ...
+    过滤器
+        @WebFilter
+    监听器
+        @WebListener
+    ...
+**********************************************************************
+JSP：了解即可
+    JSP：是java程序，是JavaServerPages
+    叫：基于Java语言实现的服务器端的页面，是一种翻译引擎
+    JSP是JavaEE的13个子规范之一（JDBC，JNDI，EJB，RMI，JSP，Servlets，XML，JMS，Java IDL，JTS，JTA，JavaMail，JAF）
+    JSP是一套规范，所有的WEB浏览器也都实现遵循这套规范，都是按照这套规范进行的翻译
+    所有的WEB浏览器都内置了一套JSP翻译引擎
+
+    服务器底层会先把jsp文件翻译成***jsp.java，然后编译生成***jsp.class
+    底层该new对象new对象，该调方法调方法,实际上JSP也是一个servlet
+    ***jsp extends org.apache.jasper.runtime.HttpBase
+        ----> extends HttpServlet implements HttpJspPage
+    故此jsp的生命周期和Servlet的生命周期完全相同，完全就是一个东西
+    jsp和Servlet一样都是单例的（假单例）
+
+    jsp的第一次访问是比较慢的，（展示项目的时候把所有的jsp文件都访问一遍）因为第一次访问底层会翻译成java并编译成class。
+    之后对象实例化，访问方法中init() 调用jspInit();  _jspInit(); 然后调用service()方法
+    第二次及以后执行，只需要调用单例servlet对象的service()方法即可
+
+    对JSP进行错误调试的时候，还是需要直接打开JSP生成的java文件，检查java代码
+
+JSP的基础语法：
+    在jsp文件中直接编写的文字，都会自动被翻译到生成的Servlet类的service方法的out.writer("...");中
+    这个out是jsp专用的 jakarta.servlet.jsp.JspWriter ---->extends PrintWriter
+    被java程序当作普通字符串，打印输出到浏览器，浏览器对HTML CSS JS代码进行解释执行，展现效果
+
+    在jsp文件中写java程序：
+
+    page指令,可以设置响应的内容类型，可以解决中文乱码问题，添加charset=UTF-8
+    对应翻译后java程序中的response.setContentType("text/html;charset=UTF-8");
+    <%@page contentType="text/html;charset=UTF-8"%>
+
+    也叫做脚本块，可以出现多个
+    <%
+        java语句;
+        java语句;
+        java语句;
+        ...
+    %>
+    此脚本块符号中间的语句，被jsp当作java语句，翻译到Servlet类当中的service方法体当中
+    service方法是成员方法，方法体的内容依照java的编译语法进行编写
+    不可以直接编写静态代码块，方法
+    可以编写局部内部类，匿名内部类，Lambda表达式等符合语法的写法
+    自上而下顺序翻译
+    如果不和java规范，可以翻译生成，但是编译报错
+    <%--
+        jsp的专业注释，不会被翻译到java源代码。
+        如果使用html的注释<!---->,就会被翻译到java源代码中，导致报错;
+    --%>
+
+    <%!
+        java语句；
+    %>
+    此脚本块符号中间的语句会被翻译到service方法之外，Servlet类体当中。
+    此方法很少用，可能造成全局污染。因为Servlet是单例的，Tomcat服务器是支持多线程的
+    多线程访问共享的资源(静态变量，实例变量)会有线程安全问题
+    可以编写属性，方法，代码块，构造器，成员内部类等
+
+JSP进行输出的语法
+    <%
+        out.write("");
+    %>
+    jsp中有九大内置的对象，之一是jsp专用的JspWriter，必须在service方法内部使用
+    jakarta.servlet.jsp.JspWriter out = null;
+    jakarta.servlet.jsp.JspWriter _jsp_out = null;
+    内置对象中有异常处理机制，Exception，必须启用才能在翻译后看得到
+    <% %>这个符号里才可以使用九大内置对象，也就是servlet中
+
+    一般用来动态输出变量，普通字符串可以直接写在jsp中
+
+    如果输出的内容中还有java代码，可以使用如下语法格式
+    <%=
+        a + b
+    %>
+    在=的后面编写要输出的内容，输出的内容是动态的内容
+    <%= %> 会被翻译成out.print( );放入servlet方法中。由于是括号内的内容，不能加分号
+
+    <%@page %> page指令，通过contextType,language等属性用来设置响应的内容类型
+****************************************************************************
+JSP与Servlet的区别
+    本质相同职责不同：
+    JSP的职责是：展示数据
+    Servlet的职责是：收集数据，编写业务流程和逻辑处理，链接数据库
+
+将之前原型中的html文件全部修改为jsp，然后在jsp文件添加page指令，防止中文乱码
+完成所有页面的正常流转，正常跳转
+
+动态获取应用根路径，使用jsp的九大内置对象之一的request
+request.getContextPath()方法
+注意空格问题，字符串拼接成的路径中不可以有空格
+
+过程：前端发送请求，后端servlet收到请求，根据收到的部门编号10，连接数据库，查询编号10对应的信息。
+把查找到的零散数据以对象的形式封装，数据存储在对象的属性中，
+然后将多个对象装入容器集合，将集合通过转发（同一个请求域）传递给jsp。
+jsp在请求域中获取信息，翻译成servlet后展示到前端浏览器
+
+域
+ServletContext(application)应用域
+HttpServletRequest(request)请求域
+
+重点 模板方法和jsp进行配合。servlet用到的模板是service方法，对请求进行分类，每一种请求调用不同的实现方法
+不建议只是用jsp一种技术完成web应用。
+建议使用servlet + jsp方式，职责分明，jsp中java代码越少越好
+
+jsp文件的文件名是可以配置的，依据浏览器的配置
+    在CATALINA_HOME/conf/web.xml中配置,手动添加不同的扩展名都可以
+    <servlet-mapping>
+        <servlet-name></servlet-name>
+        <url-pattern>*.jsp<url-pattern>
+        <url-pattern>*.jspx<url-pattern>
+    </servlet-mapping>
+    对于web服务器来说，xxx.jsp只是一个普通的文本文件，web容器会将这个文件翻译成java程序并编译成class文件并执行
+    执行的时候与jsp文件没关系，故此扩展名随意
+
+添加登录功能
+    确保只有有权限的合法用户才能使用系统，对数据进行增删改。权限不足的用户只可以查询。
+
+    实现登录页面步骤：
+        0、数据库中提供用户表t_user
+            存储用户的登录名与登录密码等信息
+            密码一般在数据库表中存储的是密文，一般不会以明文的形式存储
+            一般可以采用MD5加密
+        1、登录表单那form，具有用户名，密码输入的框
+            用户点击登录，提交表单，post提交用户名和密码
+        2、后台对应的Servlet程序处理用户登录的请求
+            将用户提交的信息与数据库中的信息进行比对，
+            登陆成功：跳转到部门列表页面
+            登录失败：提供登陆失败页面
+    问题：
+        知道后端请求路径就可以直接访问，登录起不到实质作用
+        引入session会话机制
+**************************************重点*************************************
+关于B/S结构系统的会话机制 session
+    会话在服务器端也有一个java对象，一次会话对用一个session对象
+    session对象由服务器创建，存储在服务器端
+    打开浏览器，关闭浏览器通常会开启结束一个会话
+    一次会话中可以对应多个请求request
+    session对应的类名：HttpSession(jarkata.servlet.http.HttpSession)
+    session机制属于B/S架构的一部分，使用其他语言开发web项目，同样也是有session机制的，不同的语言都实现了这一规范
+    session对象的作用是保存会话状态（例如保存下用户登录成功的状态）
+    （网站使用的是HTTP协议，是一种无状态无连接协议，请求的时候B和S是链接的，但是请求结束之后链接就断开了
+        HTTP协议这样做可以大大降低高用户量的情况下服务器的压力）
+    只要B和S断开了，浏览器关闭，服务器是不知道的，服务器无法监测浏览器启停。
+    例如网站提供 安全退出功能，关闭session会话并销毁对象，保证信息安全
+
+三个域对象：
+    request对象在一次请求结束之后就销毁了，一个请求一个，请求域生命周期短，无法跨请求，无法保存会话状态。
+    servletContext的application对象是服务器启动时创建，关闭时销毁。一个应用webapp只有一个，多个应用共享，应用域广泛，生命周期久。
+    （servletContext是web.xml，servletConfig是其中配置的servlet标签）
+    session会话域，处于两者之间，一个用户一个。可以存储用户的登录信息，用户在此会话中的所有请求都可以享受这个会话域中的状态
+    request<session<application
+
+获取session对象（通过request对象）
+    HttpSession session = request.getSession();获取当前session对象，没有则新建
+    HttpSession session = request.getSession(false);获取当前session对象，没有则返回null
+    向域中（这三个域都有这两个方法）
+    session.setAttribute();存（绑定）
+    session.getAttribute();取
+    session.removeAttribute();删
+
+HttpSession的实现原理：
+    同一行代码
+    用户A访问获取的是用户A的session
+    用户B访问获取的是用户B的session
+    ...
+    requestSession()的作用：从服务器中获取该会话对应的session对象，没有获取到则在服务器新建
+    session的销毁有个session超时机制，比如30分钟没有请求则销毁，或者十天免登录等
+
+    服务器WEB容器中的session对象会以session；列表的形式存储，类比Map集合
+    key对应sessionId（编号），value对应session对象
+    用户发送第一次请求的时候，服务器会创建一个新的session对象，同时给session对象生成一个id
+    然后web服务器会将session的id发送给浏览器，浏览器将session的id保存在浏览器的缓存中。
+    用户第二次及以后发送请求的时候，会自动将浏览器缓存中的sessionId发送给服务器。
+    服务器获取到sessionId，与列表比对，查找到对应的session对象
+
+    通常浏览器关闭时，其中缓存的sessionId也被清除，故此再发送请求，找不到原来的session，等同于会话结束，服务器会再给新建一个
+    但是实际上服务器中原来的session不一定被销毁，原会话实际上不一定结束。
+    session对象的销毁是靠超时机制，或者手动销毁。
+    在web.xml中可以配置session的属性
+    数字表示超时分钟数
+    <session-config>
+        <session-timeout>30</session-timeout>
+    </session-config>
+    Tomcat服务器默认配置为30分钟
+
+    浏览器F12，
+    初次发送请求，
+        request headers中没有sessionId，
+        response headers中有Set-Cookie:"JSESSIONID=*********************;Path=/*******"，
+            服务器生成了新的session对象，并将sessionId发送给浏览器
+    再次发送请求，
+        request Headers中有Cookie:"JSESSIONID=*********************"，
+            浏览器缓存中的sessionId发给服务器，找到了服务器中的session对象
+        response Headers中没有set-cookie,也就是没有新的sessionId传过来
+    关闭浏览器：
+        缓存消失，cookie小时，sessionId消失。会话等同结束，但实际上浏览器中的session并没有立即被销毁
+
+SessionId是以Cookie的形式存在的
+    浏览器支持Cookie禁用：服务器正常发送cookie给浏览器，但是浏览器拒收了cookie
+    导致找不到Id，浏览器每发送一次请求，服务器都会新建一个session对象。
+    在禁用cookie的情况下，实现session机制：
+        URL重写机制
+        可以将cookie JSESSIONID=********************* 手动加到URL请求路径后面，分号隔开
+        URL重写会增加开发者的成本，jsessionid是动态的，增加开发难度
+*********************************************************************************************
+解决项目中登录问题
+    登录成功后，将用户登录信息存储到会话域session中。
+    其他页面对session中信息进行判断，合法用户成功登录则正常使用，其他返回登录页面
+
+JSP有九大内置对象，service方法里面已经创建了一个session对象
+    jakarta.servlet.http.HttpSession session = null;
+    session = pageContext.getSession();
+    访问jsp生成的页面时会自动创建，即使还没发送任何请求，也会有session对象
+
+    禁用jsp的获取session的方法，添加page指令
+    <%@page session="false"%>
+    表示访问jsp的时候不会自动生成session对象,取用时也就无法直接使用内置session
+
+安全退出功能：销毁session对象
+    session.invalidate();
+******************************************************************************************
+Cookie实现原理与理论基础
+    JSESSIONID=*********************
+    这个键值对数据其实就是cookie对象
+    浏览器缓存运存中是以cookie的形式保存sessionId的
+    只要浏览器不关闭，用户再次发送请求的时候，会自动将运行内存中的cookie发送给服务器
+    服务器根据这个值来找到对应的session对象
+保存：
+    cookie可以保存在运行内存中，浏览器关闭cookie就消失了
+    cookie也可以持久化到硬盘文件中，永久保存
+作用：
+    cookie和session机制其实都是为了保存会话的状态，是因为HTTP协议是无连接协议，无状态协议
+****cookie是将会话的状态保存在浏览器客户端上，session是将会话的状态保存在服务器端上。
+    cookie常用来信息追踪，会话状态保存等
+案例：
+    京东商城，在未登录的情况下，向购物车中放入几件商品，之后关闭商城，关闭浏览器
+    再次在同一个浏览器上访问京东商城，购物车中的商品还在，即使都在未登录的情况下
+    实现原理：
+        商城会将购物车的商品编号放入cookie中，cookie保存在本地硬盘文件中，即使浏览器关闭，cookie并不会消失
+        当再次访问商城查看购物车的时候，浏览器会自动读取本地硬盘中的cookie，拿到商品编号，然后动态展示购物车中的商品
+    如果保存的cookie被清除了，则购物车会丢失数据
+案例：
+    cookie实现十天内免登录
+    用户输入正确的而用户名和密码，同时选择十天内免登录。登陆成功后，浏览器客户端会保存一个cookie，这个cookie中保存了
+    用户名和密码等登录信息。这个cookie会被浏览器保存在硬盘中，并设置超时时间为十天。在这有效期间十天内，
+    用户再次访问相同登录页面时，浏览器自动的提交关联的cookie给服务器，服务器收到正确的cookie，获取正确的用户名与密码。
+    验证通过，返回登录成功
+
+cookie和session机制是一种思想，不局限于java语言，是Http协议中的一种机制，php也可以实现
+HTTP协议中规定，任何一个cookie都是由name和value组成的，都是String类型
+********************************************************************************
+session在服务器端，cookie在浏览器端
+
+在java的servlet中，对cookie提供了支持
+    jakarta.servlet.http.Cookie;
+    注意：Cookie类没有无参构造方法，想要实例化Cookie对象必须要提供name和value属性
+    java程序通过response.addCookie(Cookie cookie); 来吧cookie数据发送给浏览器
+    HTTP协议中规定：当浏览器发送请求的时候，会自动携带该path下的cookie数据给服务器
+    并且通过URL决定发送哪些cookie
+    常用方法：
+        cookie.setMaxAge(秒数);
+        时间是以国际时间0时区格林威治时间为基准，中国时区为+8
+        故浏览器F12中显示的时间是当前时间-8+设置时间
+        如果没有设置时间，则cookie默认保存在浏览器的运行内存中，浏览器关闭则cookie消失
+        只要设置有效时间>0,那么一定会存在硬盘文件当中
+        如果设置=0,则时间是1970年1月1日 00：00：10，表示该cookie直接失效，作用是用来清除浏览器上同名cookie
+        如果设置<0,则表示该cookie不会被存储，不会被存储在硬盘文件中，会放在浏览器运行内存中。和不调用此方法是同一个效果
+
+        response.addCookie(cookie);
+浏览器提交cookie与否与请求路径有关
+    默认不指定cookie路径情况下，cookie关联的路径path是：请求路径的上一级及他的子路径
+    请求：localhost:8080/servlet10/cookie/generate生成的cookie，并没有指定path
+    则默认的path是：localhost:8080/servlet10/cookie 以及它全部的子路径
+    只要浏览器发送符合path的请求路径，都会携带发送此cookie给服务器
+手动设置cookie的path
+    cookie.setPath("/servlet10");
+    表示只要是这个servlet10项目的请求路径，都会提交这个cookie给服务器
+java程序接收浏览器发送过来的cookie
+     Cookie[] cookies = request.getCookies();
+     返回数组，因为可能发送多个cookie，如果没有cookie被发送，此方法返回null，而不是长度为0的数组
+     然后遍历数组，cookie.getName();cookie.getValue();
+****************************************************************************************
+使用cookie实现十天内免登录功能
+修改前端页面：
+    前端提供复选框，用户选择则表示需要支持十天内免登录功能，反之不需要
+    如果选择，则后端创建cookie，失效时间设置为10天，访问应用时，浏览器携带这两个cookie，并且需要响应cookie给浏览器
+    用户第二次打开首页页面时，如果之前选择了免登录，则跳过登录页面。如果之前没选择，则重新登录
+
+    欢迎页中需要对cookie中信息进行判断。其中储存的信息正确则直接跳到list
+    给退出系统增加销毁cookie功能和销毁session功能，销毁后返回登录页面
+    ************************************************************************************
+    ***清除cookie不知需要清除本地的cookie，使用cookie.setMaxAge(0)
+    ***还要提交到服务器中，把服务器中对应的cookie也清了。否则重定向时发送请求服务器还会把cookie发回来
+    ***并且cookie的path也会影响，即使同名，路径不同会被认为不是一个
+    ***想要删除对应的cookie必须路径也设置相同，否则删不掉
+    也可以使用前端来删除
+*******************************************************************************************
+JSP的指令，JSP的九大内置对象
+    指令的作用：指导JSP的翻译引擎如何工作
+    <%@指令名 属性名=属性值 属性名=属性值 ...%>
+    include指令：包含指令，在JSP中完成静态包含，现已很少使用
+    taglib指令：引入标签库，JSTL标签库
+    page指令：
+        <%@page session="true|false"%>   表示JSP内置对象session的启用与否，没有session对象会创建。默认时为true
+        <%@page contentType="text/html";charset="UTF-8"%>   用来设置响应的内容类型
+        <%@page pageEncoding="UTF-8"%>    用来设置响应时采用的字符集,作用同上charset，翻译后相同
+        <%@page import="java.util.List"%>    导包
+        <%@page errorPage="/error.jsp"%>    设置出现错误之后的跳转位置
+        <%@page isErrorPage="true"%>在错误页面可以启用exception内置对象，用来返回发生的异常对象
+            exception.printStackTrace();打印错误堆栈信息，输出到后台
+        <%@%>
+
+**java即是编译型，也是解释型，不能单独生效**
+
+九大内置对象
+    PageContext pageContext         页面作用域
+    HttpServletRequest request      请求作用域
+    HttpSession session             会话作用域
+    ServletContext application      应用作用域
+        pageContext>request<session<application
+        以上四个作用域都有：setAttribute,getAttribute,removeAttribute方法
+        尽可能使用小的域
+
+    Throwable exception             异常
+
+    ServletConfig config            配置信息，xml文件中的信息
+
+    Object page                     this，当前的servlet对象(可以当作没有)
+
+    jspWriter out                   输出
+    HttpServletResponse response    响应
+
+***************************************************************************************
+EL表达式
+    Expression Language
+    JSP中的特殊语法，提高编程效率，具有隐含对象。
+    在JSP2.0之后引入
+    EL表达式可以代表JSP中的java代码，让JSP文件中的程序看起来更加整洁美观，更便于维护
+    EL表达式可以算是JSP语法的一部分，EL表达式归属于JSP
+作用：
+    从某个域中**取**数据，四个域
+        pageContext
+        request
+        session
+        application
+    将取出的数据转换成字符串
+        如果是一个java对象，则会自动调用该对象的toString方法（需要重写）
+    将字符串**输出**到浏览器
+    体现了分工作用 servlet负责处理数据，JSP EL展示数据
+语法格式：
+    ${表达式}
+    EL表达式只能从某个范围中取数据，必须要吧要取的数据，对象存储到某个域当中，四大范围之一。
+    EL表达式识别的是get方法，即使他不是私有属性的get，只是一个普通的以get开始的方法，也可以被EL识别调用
+    反之必须要有getxxxxx()方法，EL表达式中才可以 .xxxxx 调用，并且必须遵守驼峰命名方法
+    EL表达式中不可以添加双引号，否则EL表达式会将其识别为普通字符串直接输出
+
+    如果不同大小的域都定义了同名（name相同）的数据
+    在没有指定范围的前提下取出数据的顺序是域从小到大的顺序。局部优先原则
+    指定范围则需要在前面加上域的名字例如
+        pageScope.data
+        requestScope.data
+        sessionScope.data
+        applicationScope.data
+   实际开发中，往不同的域中存储的数据name一般是不同的，所以不会出现冲突的情况，前缀xxxScope可以省略\
+   这是一种隐式的范围
+特殊情况下：
+    如果name打字错误，getAttribute()方法会返回null，因为找不到对应name的value
+            而EL表达式取不到（由小到大逐级寻找），并不会报错，也不会显示null，而是不显示（EL额外做了空值处理，例如三目运算符）
+
+访问对象的属性的方式
+    ${username.name}
+    ${username["name"]}   不加双引号会看作变量，带双引号才会找getName()这个方法，类比JS语法（有特殊字符的时候）
+存取Map集合中元素
+    <%
+        Map<String,User> userMap = new HashMap<>();
+        User user = newUser();
+        user.setUsername("zhangsan");
+        userMap.put("user",user);
+        request.setAttribute("abc",userMap);
+    %>
+    ${abc.user.username}    map.key
+从数组中取数据
+    <%
+        String[] usernames = {"zhangsan","lisi","wangwu"}
+        requset.setAttribute("nameArray",usernames)
+    %>
+    ${nameArray}    调用数组的toString方法 [Ljava.lang.String;@12312312
+    ${nameArray[0]}     取出数组下标为0的数据，数组下标越界取不出数据，EL进行了预处理，显示空白不会报错
+从List集合中取数据
+    <%
+        List<String> list = new ArrayList<>();
+        list.add("abc");
+        list.add("def");
+        request.setAttribute("myList",list);
+    %>
+    ${myList}     调用list集合的toString方法 [adc,def]
+    ${myList[0]}  abc
+从Set集合中取数据
+    <%
+        Set<String> set = new HashSet<>();
+        set.add("a");
+        set.add("b");
+        request.setAttribute("mySet",set);
+    %>
+    ${mySet}    调用set集合的toString方法 [a,b]
+    ${mySet[0]}  set是无序集合，没有下标，无法获取，只能使用Map集合
+<%@page isELIgnored="true"%>
+    page指令，为true表示忽略整个JSP页面中的所有EL表达式，默认false不忽略
+无效单行EL表达式
+    \${username}    忽略此EL表达式 反斜杠
+
+EL表达式获取request对象，隐式对象pageContext
+    在EL表达式中，没有request这个隐式对象，requestScope只代表请求范围，不等同于request对象，不像JSP中有九大内置对象
+    EL表达式中的隐式对象是pageContext,代表当前servlet对象
+    EL表达式中的pageContext和JSP九大内置对象的pageContext是同一个对象
+    获取应用根路径：
+****<%=request.getContextPath()%>   等同于
+    <%=((HttpServletRequest)pageContext.getRequest()).getContextPath()%> 等同于
+****${pageContext.request.contextPath}
+    pageContext对象还可以获取session,exception,response,page,servletContext,servletConfig等
+注意：pageContext.getRequest()获取的是ServletRequest，需要强转成HttpServletRequest
+    而JSP中内置对象request是HttpServletRequest的
+El中其他的隐式对象
+    param获取用户在浏览器上提交的数据
+        <%=request.getParameter("username")%>   等同于
+        ${param.username}
+        如果是由复选框等获取，多值参数，则获取parameter数组的第一个值
+    paramValues用于获取多值参数例如复选框提交的，返回parameter数组
+        <%=request.getParameterValues("username")[0]%>    等同于
+        ${paramValues.username[0]}
+        返回String一维数组
+    initParam算应用域的对象的initParameter，用来获取配置servlet上下文初始化参数，
+        xml文件中可以配置，此初始化参数生效到应用域中ServletContext对象中
+        <context-param>
+            <param-name>pageSize</param-name>
+            <param-value>20</param-value>
+        </context-param>
+        注意不是servlet标签中的初始化参数，那个是ServletConfig
+        ServletContext是Servlet上下文对象，对应的JSP九大内置对象是application
+        <%
+            String ps = application.getInitParameter("pageSize");
+        %>
+        <%=ps%>     等同与
+        <%=application.getInitParameter("pageSize")%>    等同于
+        ${initParam.pageSize}
+    ...
+EL表达式中的运算符
+****数据的运算尽量不要放在EL中，JSP尽量只完成数据的展示****
+    算术运算符
+        + - * / %
+        两边不是数字的时候，一定会转换成数字，转不成数字报错，NumberFormatException。只做算术运算，不做字符串拼接
+    关系运算符
+        == != > < >= <= eq gt lt
+        EL表达式中的 == != eq 等调用了equals方法
+    逻辑运算符
+        !   &&  ||
+        not and or
+        具有优先级问题，注意添加()
+    条件运算符
+        ? : 三目
+    取值运算符
+        [] 和 .
+    empty运算符
+        判断一个对象是否为空，是否里面有值
+        ${empty param.username ? "用户名不能为空" : "欢迎访问"}
+**********************************************************************************
+JSTL标签库
+    Java Standard Tag Lib   Java标准标签库
+    作用： JSTL结合EL 目的是让JSP中的java代码消失
+        JSTL模仿的就是HTML的标签语言，来让JSP更加容易维护
+    步骤：
+        引入JSTL标签库的jar报
+        tomcat10之后引入的jar包是：jakarta.servlet.jsp.jstl-2.0.0.jar
+        JSTL的实现有单独的jar包，并且它不是Servlet，是在其后出现的，Tomcat服务器并没有实现这一规范
+        标签也是写在JSP当中，底层依旧会翻译成对应的java程序并执行
+        在WEB-INF下新建lib目录，同MySQL驱动，引入jar包
+    JSTL提供了很多种标签：引入语法
+        <%@taglib prefix="" uri=""%>
+核心标签库：
+    <%@taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+    配置文件tld源码：
+    <description>JSTL 1.2 core library</description>
+    <display-name>JSTL core</display-name>
+    <tlib-version>1.2</tlib-version>
+    <short-name>c</short-name>
+    <uri>http://java.sun.com/jsp/jstl/core</uri>
+
+    使用：
+    原理：uri链接了一个tld配置文件，tld配置文件采用xml语法编写
+    web\WEB-INF\lib\jakarta.servlet.jsp.jstl-2.0.0.jar!\META-INF\c.tld
+    源码分析：
+  <tag>
+    <description>
+        对此标签的描述
+    </description>
+    <name>catch</name>  标签的名字
+    <tag-class>org.apache.taglibs.standard.tag.common.core.CatchTag</tag-class>     标签对应的java类
+    <body-content>JSP</body-content>    标签体当中可以出现的内容，是JSP，表示标签体中可以出现符合JSP语法的所有代码，例如EL表达式
+    <attribute>
+        <description>
+            对属性的描述
+        </description>
+        <name>var</name>    属性名
+        <required>false</required>    false表示该属性不是必须的，true表示必须
+        <rtexprvalue>false</rtexprvalue>    false表示该属性不支持EL表达式，true表示支持
+    </attribute>
+  </tag>
+
+    后期学习Vue，可以类比Vue自定义标签库.
+    其他常用还有fmt格式化标签库，sql标签库等
+
+    使用core标签库中forEach标签，对List集合进行遍历
+    foreach标签，增强for循环
+    <c:forEach items="要迭代的集合" var="指代当前迭代项，代表集合中每一个元素" varStatus="var的状态对象">
+        varStatus具有count属性，以1开始，以1递增，主要适用于给var编号
+        ${stuStatus.count}
+        标签体
+    </c:forEach>
+    举例：
+    <c:forEach items="${stuList}" var="stu">
+        id=${stu.no};name=${stu.name}<br>
+    </c:forEach>
+
+JSTL的核心标签库core中的常用标签
+    if标签
+    <c:if test="布尔类型-表达式" var="v" scope="request">
+        标签体
+    </c:if>
+    JSTL中没有else标签，可以使用多个if判断
+    if标签具有var属性用来存储text的布尔表达式的判断结果T/F，scope属性用来指定var的存储域，都不是必须的
+
+    foreach标签，for循环
+    <c:forEach var="指代循环中的变量" begin="起始" end="结束" step="步长" varStatus="var的状态对象">
+        使用EL取出循环的变量，也就代表这个变量存在了域中
+        标签体
+    </c:forEach>
+
+    choose标签，就是if elseif else判断，嵌套格式固定
+    <c:choose>
+        <c:when test="${param.age < 18}">
+            青少年
+        </c:when>
+        <c:when test="${param.age < 35}">
+            青年
+        </c:when>
+        <c:when test="${param.age < 35}">
+            中年
+        </c:when>
+        <c:otherwise>
+            老年
+        </c:otherwise>
+    </c:choose
+
+base标签
+    前端HTML代码语法中的标签，可以设置整个网页的基础路径，通常出现在head标签中
+    例：
+    <base href="http://localhost:8080/oa/">
+    此页面中其他的所有路径都会自动加到此路径后面
+    <a href="user/login">退出</a>
+    等同于
+    <a href="http://localhost:8080/oa/user/login">退出</a>
+    注意：base路径只会对该页面中没有以 / 斜杠开始的路径起作用。注意JS代码中的路径保险起见不要依赖base标签，写全路径
+
+    base路径使用EL动态获取
+    <base href="http://localhost:8080/oa/">
+                协议                              IP地址                            端口号                             应用根路径                       末尾斜杠不能丢
+    <base href="${pageContext.request.scheme}://${pageContext.request.serverName}:${pageContext.request.serverPort}${pageContext.request.contextPath}/">
+
+***************************************************************************
+Filter过滤器实现原理及设计模式
+    Filter过滤器是Servlet规范中的，拦截范围较大。而拦截器是SpringMVC中的，只拦截action等
+    过滤器是和用户的请求路径对应，可以写多个过滤器。
+    Filter可以做到在Servlet这个目标程序执行之前过滤，也可以在目标程序执行之后过滤
+    选择走哪个过滤器，取决于请求路径，过滤器可以设置需要过滤的路径来选择
+    过滤器中一般编写公共代码
+
+写法：
+    编写java类实现接口 jakarta.servlet.Filter 并实现这个接口当中所有的方法
+        init方法      在Filter对象第一次被创建之后调用，并且只调用一次,在此之前会掉无参构造对象实例化
+        doFilter方法  用户只要发送一次请求，就会执行一次。在此方法中编写过滤规则
+        destroy方法   在Filter对象被释放/销毁之前调用，并且只调用一次
+    然后在web.xml文件中配置，与servlet相似
+        filter
+            filter-name
+            filter-class
+        /filter
+        filter-mapping
+            filter-name
+            url-pattern
+        /filter-mapping
+    可以写在servlet标签中，也可以使用@WebFIlter注解
+
+过滤器对象默认在服务器启动时就会创建，servlet对象默认情况不会在服务器启动时新建对象
+Servlet是单例的，Filter对象爱过你也是单例的（都是伪单例）
+
+执行下一个过滤器，如果下一个不是过滤器了，则执行目标程序Servlet
+  **在请求时添加过滤规则**
+    chain.doFilter(request,response);
+
+可以使用数组形式的精确路径，也可以使用
+    扩展匹配符 * 模糊匹配路径
+    "*.do"      后缀匹配  不要以斜杠 / 开始 所有以 .do 结尾的路径
+    "/dept/*"   前缀匹配，需要以 / 开始
+    "/*"        所有路径
+
+规范中规定，Filter的优先级高于Servlet
+一个路径 /a 对应一个Filter，也对应一个Servlet。这个路径的请求一定会先执行Filter
+
+关于Filter的配置路径：精确匹配，模糊匹配
+
+关联的路径相同的情况下，过滤器Filter的执行优先级时（先进后出）
+    web.xml文件中，filter-mapping越靠上的先执行，优先级高
+    过滤器的调用顺序遵循栈数据结构，先进后出
+
+    如果使用注解标注，则执行顺序取决于过滤器的类名在词典中的顺序
+
+Filter的生命周期
+    和Servlet对象生命周期一直
+    区别就是Filter对象在默认情况下，在服务器启动阶段实例化，Servlet不会
+
+责任链设计模式
+    程序设计中的问题：在编译阶段已经完全确定了调用关系，如果想要改变调用顺序，则必须修改java源代码
+    java源代码一但修改，就需要重新编译，项目需要重新测试和发布，十分繁琐成本较大，违背OCP原则
+
+    过滤器最大的优点：在程序编译阶段不会确定调用顺序
+    因为Filter的调用顺序时配置到web.xml文件中的，只要修改web.xml配置文件中filter-mapping的顺序
+    就可以调整Filter的执行顺序，显然Filter的执行顺序是在程序执行阶段**动态确定**的
+    这种设计模式被称作责任链设计模式
+    核心思想：在程序运行阶段，动态的组合程序的调用顺序
+    故WebFilter一般都配到web.xml中
+***********************************************************************************
+Listener监听器
+    是Servlet规范中的一员
+    在Servlet中，所有的监听器接口都已”Listener“结尾
+    监听器实际上是Servlet规范留给java程序员的一个时机，
+        这个时机类似的有：
+            静态代码块， 类加载时执行，且只执行一次。例如单例模式下，新建对象准备类加载时的工作
+            实例代码块，对象实例化时执行
+            finalize,   对象销毁时执行
+            destroy,    servlet对象销毁时执行
+
+    Servlet规范中提供了哪些监听器
+        jakarta.servlet包下
+            ServletContextListener      服务器启停(应用域)
+            ServletContextAttributeListener     向应用域中存删改数据时，监听的是域对象，其中数据的变化
+            ServletRequestListener      请求发送与结束，一次请求对应一个请求对象，响应结束，请求对象销毁 （请求域）
+            ServletRequestAttributeListener     向请求域中存删改数据时，监听的是域对象，其中数据的变化
+        jakarta.servlet.http包下
+            HttpSessionListener         会话对象创建（访问jsp默认会创建session）与销毁（invalidate） （会话域）
+            HttpSessionAttributeListener        向会话域中存删改数据时，监听的是域对象，其中数据的变化
+            HttpSessionBindingListener      监听的是实现此接口的java类对象，该java类不需要使用@WebListener注解
+            HttpSessionIdListener       session的Id发生改变的时候(cookie)
+            HttpSessionActivationListener   监听session对象的钝化(session对象从内存存储到硬盘)和活化(session对象从硬盘恢复到硬盘)
+
+监听器对象的实现
+  **以ServletContextListener为例
+    首先实现这个接口，并实现其中的方法
+    default void contextInitialized(ServletContextEvent sce)     上下文初始化(时机)
+        在ServletContext对象被创建时，由web服务器自动调用
+        一般是服务器启动时的时间点
+    default void contextDestroyed(ServletContextEvent sce)       上下文销毁(时机)
+        在ServletContext对象被销毁时，由web服务器自动调用
+        一般是服务器关闭的时间点
+    在web.xml文件中对其进行配置
+    <listener>
+        <listener-class>com.MyListener</listener-class>
+    </listener>
+    同理也可以使用注解进行配置
+    @WebListener
+    所有监听器中的方法都是不需要java程序员调用的，是由服务器负责调用
+    当对应的事件发生后，被web服务器自动调用
+
+  **以HttpsSessionAttributeListener为例 监听的是HttpSession对象
+    方法：
+        attributeAdd
+            向域中存入数据
+        attributeRemove
+            从域中删除数据
+        attributeReplaced
+            域中的数据被替换
+
+  **以HttpSessionBindingListener为例 监听的是实现了此接口的java类对象，
+    方法
+        valueBound
+            实现此接口的类向域中存数据时
+        valueUnbound
+            实现此接口的类，其数据在域中被删除时
+
+例：统计该网站实时在线的用户个数
+    思路：统计服务器端分配的session对象个数，因为一个session代表一个用户。
+    使用HttpSessionListener，count++
+    缺点：session销毁有延迟，统计不精确。无法确定用户是否登录
+统计登录用户的在线数量
+    思路：session中存储过user对象，使用HttpSessionAttributeListener 检测存储的特定对象，例如用户名
+    用户登录，即为session中存储过user类型对象
+    也可以让user对象实现HttpSessionBindingListener监听器，每有一个用户登录，user类就会存一次，监听器中count++
+    用户退出登录，后台清除session中user，触发unbind，count--
+
+具体实现：
+    统计项目中当前登录的在线人数
+        userBean实现监听器，登录人数count存储到application
+    用户登录：
+        session.setAttribute("user",userBean);
+    用户退出
+        session.removeAttribute("user");
+        session超时自动销毁或其他操作手动销毁
+
+********************************************************************************************
+MVC架构模式
+    不使用MVC架构模式，完成银行转账功能。出现的问题与缺陷
+        在余额不足时，使用异常处理机制。自定义一个异常，extends Exception，提供无参和有参msg构造方法
+        创建异常对象，throw new MoneyNotEnoughException("余额不足");
+        这里msg属性是一直继承过来，直到传给throwable的成员变量中，报异常信息
+        触发异常，结束当前语句块，进入catch捕捉
+        然后使用响应流 response.getWriter 将其响应到前端
+        小技巧：count += ps.executeUpdate;
+        += 运算可以自动类型转换
+        添加事务机制，关闭自动提交，出现异常事务回滚
+    分析：
+        AccountTransferServlet负责了
+            数据接收
+            核心的业务处理
+            负责数据库表中数据的CRUD操作
+            负责页面的数据展示
+        缺点：
+            复用性太差，耦合度太高，扩展力太差，没有职能分工，没有职能组件
+            操作数据库的代码和业务逻辑代码混杂在一起，容易出错，维护成本高，无法专注业务逻辑的实现
+
+引入MVC架构模式，分层，职能分工
+    MVC架构模式是一种统一的模式，一种思路的体现，适用于多种语言
+    Model       数据/业务
+    View        视图/展示
+    Controller  控制器     核心
+
+    用户发送请求，控制器C接收到用户的请求
+    控制器调用Model处理业务
+    Model链接数据库DB，进行数据的处理，业务逻辑的实现
+    Model将处理结果，处理后的最终数据返回Controller
+    Controller调度View，视图组件进行数据的展示
+    视图层的组件有很多种，例如JSP Freemarker Velocity Thymeleaf html
+    View将展示数据的结果返回给Controller，Controller响应给用户
+
+****************************************************************************
+JavaEE设计模式之DAO设计模式
+    Data Access Object 数据访问对象
+    只负责数据库表的CRUD，不可以编写业务逻辑进去
+    提供很多方法进去
+
+    普通简单的java对象被称为pojo对象，算作一种简单的javaBean对象（封装数据的对象）
+    可以叫做bean，也可以叫做领域模型对象，domain对象
+
+**********************************************************************************
+MVC架构模式与三层架构的关系
+    用户--->Controller--->Model-->Service--->Dao--->DB 然后一层层回到controller，再调用view回给用户
+         表示层View            业务逻辑层       持久化层
+    三层架构：
+        (用户
+
+        表现层/Web层    Servlet
+
+        业务逻辑层      Service
+
+        持久化层        Dao(JDBC MyBatis Hibernate JPA SpringData...)
+
+        (DB
+
+    Model包含：pojo,bean,domain,service,dao...
+    View包含：JSP，Servlet，FreeMarker...
+
+    Spring      管理整个项目的容器，负责项目所有对象的创建，以及维护对象和对象之间的关系(单例，工厂)
+    SpringMVC   将MVC架构模式实现的十分完美，SpringMVC已经将MVC搭建出来了
+    MyBatis     持久层，持久化框架，负责CRUD
+
+重点：一定要在业务层进行事务的处理
+    一般一个业务方法对应一个完整的事务
+
+在工具类DbUtil中，获取connection对象时，添加ThreadLocal
+    保证该线程中所有对象和方法共享一个conn，
+    这样就可以使用事务机制控制数据库操作
+***************************************************************
+
+层与层之间使用接口进行衔接
+    降低层与层之间的耦合度
+    包名:规范 都要写
+    dao
+        impl(实现类的包
+            AccountDaoImpl(实现类
+        AccountDao(接口
+    exceptions
+
+    pojo
+
+    service
+        impl
+
+    utils
+
+    web
+
+面向接口编程
+
+分析现在的问题
+    缺陷一：
+        在service层中控制了事务，需要剥离jdbc代码出去，引入动态代理机制，代理模式
+    缺陷二：
+        降低类和对象的依赖关系，引入Spring框架的IOC容器，将对象的创建，对象之间关系的管理交给框架
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
