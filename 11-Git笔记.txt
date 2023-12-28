@@ -139,19 +139,53 @@ Git的基本配置
 
 ***************************************************************************************************
 将项目工程文件作为目录，提交到版本库
-
+	项目所有的文件复制或创建在工作目录下
+	对项目的文件夹 进行 add commit 操作
+	其下所有文件都会纳入版本管理并提交到本地仓库
 
 ***************************************************************************************************
 远程仓库
 
 开源社区 github
+	代码托管，共享
+	仓库链接方式 HTTPS SSH
+	
+	SSH协议：Secure Shell 安全外壳协议
+		非对称加密，客户端（自己电脑用git命令）生成密钥对，公钥和私钥，公钥交给github服务器，使用私钥解密即可安全建立通信管路
 
+链接远程仓库
+	安全验证 链接地址
+	ssh密钥生成
+		命令：ssh-keygen -t rsa
 
+		The key fingerprint is:
+		SHA256:965edvVwidgT9JYUXTDM8kIdelCnSPjAsN/ZhIT6ze8 15951@LAPTOP-7D0IT8CC
+		The key's randomart image is:
+		+---[RSA 2048]----+
+		|        .o o+*==*|
+		|         .=o+=*+o|
+		|        .. +++++ |
+		|        .. .=== .|
+		|        S.o+o=o.o|
+		|         ...o .+.|
+		|            +.. .|
+		|           + ..  |
+		|         .o...E  |
+		+----[SHA256]-----+
 
+		文件后缀是.pub 的是公钥
+		ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCvpfbOVEMETUY+jljqS9YbsQNHaZqzNVJcMQMjzon0Ual/A1MjRvU++Bvv3Z/v+k6A/UHJKOUJVu+0uLSWvVhLDCIRXO7FUq52MxVTMsOybrDPcB7wj5u0HSiv77bXXOXtGLKmpbTNkeciBzL0zrjI0pGRXQ1kcDlZ5AuINSzqyHx01Wg9K22VKbgYjLogeWXsPdd6y0zFNyMsTcI+LaaNIF5hetmYF73QfgvlQnbnMm2MJJxuiyerlcDFEX5bpt4cmKhEN1Ay5hDtZRYGdg6hXJnAdiotOoogXzqIGIIQxiotlEHDiwt3+LJDuQA9E5So7XXZZlL/4CO5/6S5i+63 15951@LAPTOP-7D0IT8CC
 
+	配置密钥
+		SSH Keys设置选项
 
+同步到远程仓库
+	git命令
+		添加远程仓库 git remote add origin git@github.com/wenwennju123/LeoMark.git
+		将本地仓库中的项目push到远程仓库 git push -u origin master
 
-
+	tortoisegit可视化同步
+		配置
 
 
 
