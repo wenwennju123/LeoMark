@@ -181,8 +181,22 @@ Git的基本配置
 
 同步到远程仓库
 	git命令
-		添加远程仓库 git remote add origin git@github.com/wenwennju123/LeoMark.git
+		添加远程仓库 git remote add origin git@github.com:wenwennju123/LeoMark.git
 		将本地仓库中的项目push到远程仓库 git push -u origin master
+		$ git push -u origin master
+		The authenticity of host 'github.com (20.205.243.166)' can't be established.
+		ECDSA key fingerprint is SHA256:p2QAMXNIC1TJYWeIOttrVc98/R1BUFWu3/LiyKgUfQM.
+		Are you sure you want to continue connecting (yes/no)? yes
+		Warning: Permanently added 'github.com,20.205.243.166' (ECDSA) to the list of known hosts.
+		Counting objects: 49, done.
+		Delta compression using up to 16 threads.
+		Compressing objects: 100% (46/46), done.
+		Writing objects: 100% (49/49), 315.73 KiB | 0 bytes/s, done.
+		Total 49 (delta 19), reused 0 (delta 0)
+		remote: Resolving deltas: 100% (19/19), done.
+		To github.com:wenwennju123/LeoMark.git
+		 * [new branch]      master -> master
+		Branch master set up to track remote branch master from origin.
 
 	tortoisegit可视化同步
 		配置
