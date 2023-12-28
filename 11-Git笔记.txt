@@ -199,8 +199,12 @@ Git的基本配置
 		Branch master set up to track remote branch master from origin.
 
 	tortoisegit可视化同步
-		配置
-
+		使用的ssh是PuTTY  gitBash用的ssh是openSSH版本
+		配置 
+			推送地址，远端地址，ssh协议密钥公钥
+			ssh客户端，选择git的ssh程序
+			
+		右键推送
 
 
 
