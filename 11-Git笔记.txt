@@ -205,12 +205,23 @@ Git的基本配置
 			ssh客户端，选择git的ssh程序
 			
 		右键推送
+		Git同步命令
 
 
+从远程仓库克隆（无需在本地创建版本库）  为本地仓库
+	tortoisegit 右键 Git克隆：将远程仓库克隆，作为本地仓库
+
+	git命令 
+		git clone git@github.com:wenwennju123/LeoMark.git
 
 
+从远程仓库获取fetch/拉取pull  到工作区
+	git fetch  相当于从远程仓库获取最新版本到本地，不会自动merge（合并代码）
+	git pull   相当于从远程仓库获取最新版本，并merge到本地
 
+	其实pull可以理解为 fetch + merge
 
+	fetch获取的方法更加安全一些，可以手动合并
 
 
 
